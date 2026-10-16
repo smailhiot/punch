@@ -122,6 +122,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
 <input type="file" id="restoreFile" accept="application/json,.json" class="hidden">
 
 <script>
+/* Affiche toute erreur à l'écran plutôt qu'un écran vide */
+window.addEventListener("error", function(e){
+  var d = document.getElementById("fatal") || document.body.appendChild(Object.assign(document.createElement("div"), {id: "fatal"}));
+  d.style.cssText = "position:fixed;left:8px;right:8px;top:8px;z-index:99;background:#b91c1c;color:#fff;padding:12px;border-radius:10px;font:13px/1.4 system-ui";
+  d.textContent = "Erreur : " + (e.message || e) + " (ligne " + (e.lineno || "?") + "). Faites une capture et envoyez-la.";
+});
+</script>
+<script src="capacitor.js"></script>
+<script>
 "use strict";
 /* ============ Stockage ============ */
 const KEY = "punch.v1";
@@ -147,10 +156,16 @@ function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) 
 /* ============ Plateforme ============ */
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
-const BG = NATIVE ? CAP.registerPlugin("BackgroundGeolocation") : null;
-const LN = NATIVE ? CAP.registerPlugin("LocalNotifications") : null;
-const FS = NATIVE ? CAP.registerPlugin("Filesystem") : null;
-const SHARE = NATIVE ? CAP.registerPlugin("Share") : null;
+function plugin(name){
+  try {
+    const reg = (window.capacitorExports && window.capacitorExports.registerPlugin) || (CAP && CAP.registerPlugin);
+    return reg ? reg(name) : (CAP && CAP.Plugins && CAP.Plugins[name]) || null;
+  } catch(e) { console.error("Plugin " + name, e); return null; }
+}
+const BG = NATIVE ? plugin("BackgroundGeolocation") : null;
+const LN = NATIVE ? plugin("LocalNotifications") : null;
+const FS = NATIVE ? plugin("Filesystem") : null;
+const SHARE = NATIVE ? plugin("Share") : null;
 
 /* ============ Utilitaires ============ */
 const $ = s => document.querySelector(s);
