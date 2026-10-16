@@ -24,7 +24,7 @@ jobs:
         run: |
           npx cap add android
           npx @capacitor/assets generate --android --assetPath assets || true
-          bash scripts/android-strings.sh
+          python3 scripts/patch-android.py
           npx cap sync android
           mkdir -p ~/.android && cp keystore/debug.keystore ~/.android/debug.keystore
           cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon

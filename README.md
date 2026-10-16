@@ -6,7 +6,9 @@ Application de punch IN/OUT pour Android (Samsung S22) avec :
 - quand vous quittez la zone de 2 km, l'app demande : **punch OUT**, **changer de client** ou **je travaille encore (déplacement)** ; le punch OUT automatique reste offert en option ;
 - gestion des clients (nom, taux, adresse) ;
 - historique avec description, matériel, taux modifiable, Facturé / Payé ;
-- export CSV pour OpenOffice / LibreOffice Calc, sauvegarde et restauration.
+- export CSV pour OpenOffice / LibreOffice Calc, sauvegarde et restauration ;
+- configuration guidée des autorisations au premier lancement (position, notifications, batterie) ;
+- widget 4x4 pour l'écran d'accueil : bouton IN/OUT, chrono et raccourcis clients.
 
 Les données restent sur le téléphone (aucun serveur).
 
@@ -17,6 +19,7 @@ Les données restent sur le téléphone (aucun serveur).
 | `www/` | L'application (une seule page web) |
 | `assets/` | Icône et écran de démarrage |
 | `keystore/` | Clé de signature fixe : permet d'installer les mises à jour sans désinstaller (donc sans perdre vos données) |
+| `native/` | Code Android natif : widget et autorisations (ajouté par `scripts/patch-android.py`) |
 | `.github/workflows/build.yml` | Construit l'APK Android et publie la version web, automatiquement sur GitHub |
 | `package.json`, `capacitor.config.json` | Configuration de l'enveloppe Android (Capacitor 7) |
 
@@ -52,7 +55,7 @@ Historique › **Exporter (Calc)**. Fichier CSV séparé par `;` avec virgule d�
 npm ci
 npx cap add android
 npx @capacitor/assets generate --android --assetPath assets
-bash scripts/android-strings.sh
+python3 scripts/patch-android.py
 npx cap sync android
 npx cap open android      # ouvre Android Studio
 ```

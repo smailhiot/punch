@@ -28,7 +28,7 @@ jobs:
         run: |
           npx cap add android
           npx @capacitor/assets generate --android --assetPath assets || echo "Icônes par défaut"
-          bash scripts/android-strings.sh
+          python3 scripts/patch-android.py
           npx cap sync android
       - name: Clé de signature fixe (pour pouvoir mettre à jour sans désinstaller)
         run: mkdir -p ~/.android && cp keystore/debug.keystore ~/.android/debug.keystore

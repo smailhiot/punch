@@ -147,11 +147,11 @@ function load(){
     clients: s.clients || [], entries: s.entries || [], active: s.active || null,
     lastLoc: s.lastLoc || null, notified: s.notified || {}, lastClientId: s.lastClientId || null,
     settings: Object.assign({}, DEFAULT_SETTINGS, s.settings || {}),
-    seenIntro: !!s.seenIntro
+    seenIntro: !!s.seenIntro, setupSeen: !!s.setupSeen
   };
 }
 let S = load();
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast("Impossible d'enregistrer : " + e.message); } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast("Impossible d'enregistrer : " + e.message); } syncWidget(); }
 
 /* ============ Plateforme ============ */
 const CAP = window.Capacitor;
@@ -166,6 +166,7 @@ const BG = NATIVE ? plugin("BackgroundGeolocation") : null;
 const LN = NATIVE ? plugin("LocalNotifications") : null;
 const FS = NATIVE ? plugin("Filesystem") : null;
 const SHARE = NATIVE ? plugin("Share") : null;
+const PN = NATIVE ? plugin("PunchNative") : null;
 
 /* ============ Utilitaires ============ */
 const $ = s => document.querySelector(s);
@@ -250,7 +251,7 @@ async function syncNativeWatch(){
   } catch(e) { nativeWatchKey = null; onLocError("error", e.message); }
 }
 
-function syncWatch(){ NATIVE ? syncNativeWatch() : (document.visibilityState === "visible" ? startWebWatch() : stopWebWatch()); }
+function syncWatch(){ if (NATIVE && !startedServices && !S.active) return; NATIVE ? syncNativeWatch() : (document.visibilityState === "visible" ? startWebWatch() : stopWebWatch()); }
 
 /* Position actuelle (une fois), avec délai */
 function currentPosition(timeoutMs = 10000){
@@ -490,6 +491,8 @@ function banners(){
   const rev = S.entries.filter(e => e.review && (e.auto || e.switched)).slice(-3);
   for (const e of rev) h += `<div class="banner"><b>${e.switched ? "Changement de client" : "Punch out automatique"}</b><br>${esc(e.clientName)} · ${hm(e.start)}–${hm(e.end)} (${dur(e.end - e.start)}). Ajouter une description ou du matériel ?
     <div class="row"><button class="btn" data-act="dismissReview" data-id="${e.id}">C'est correct</button><button class="btn primary" data-act="openEntry" data-id="${e.id}">Compléter</button></div></div>`;
+  if (NATIVE && permCache && !permsOk(permCache)) h += `<div class="banner"><b>Autorisations manquantes</b> : la détection de zone et les rappels peuvent ne pas fonctionner.
+    <div class="row"><button class="btn primary" data-act="perms">Configurer</button></div></div>`;
   if (!NATIVE && !S.seenIntro) h += `<div class="banner ok">Version web : le punch out automatique et les rappels fonctionnent seulement quand l'app est ouverte. L'app Android les fait aussi en arrière-plan.
     <div class="row"><button class="btn" data-act="hideIntro">Compris</button></div></div>`;
   if (S.active && !S.active.startLoc) h += `<div class="banner"><b>Sans position</b> : pas de punch out automatique pour ce quart. Pensez à puncher OUT.</div>`;
@@ -636,6 +639,11 @@ function renderSettings(){
     ${NATIVE ? `<button class="btn block" style="margin-top:10px" data-act="testNotif">Tester une notification</button>` : ""}
   </div>
   <button class="btn primary block" data-act="saveSettings">Enregistrer les réglages</button>
+  ${NATIVE ? `<h2>Android</h2>
+  <div class="card">
+    <div class="row"><button class="btn" data-act="perms">Autorisations</button><button class="btn" data-act="pinWidget">Ajouter le widget</button></div>
+    <div class="small muted" style="margin-top:8px">Widget : gros bouton IN/OUT avec votre position et le client par défaut, plus des raccourcis vers vos clients.</div>
+  </div>` : ""}
   <h2>Données</h2>
   <div class="card">
     <div class="small muted">Vos données restent sur ce téléphone. Faites une sauvegarde de temps en temps.</div>
@@ -863,6 +871,16 @@ const ACT = {
     if (NATIVE && (st.remindStart || st.remindEnd || st.arrival)) notifReady();
     toast("Réglages enregistrés ✓");
   },
+  perms: () => openPerms(),
+  permsAll: () => requestAllPerms(),
+  permsLater: () => { closeSheet(); afterPerms(); },
+  permsDone: () => { closeSheet(); afterPerms(); toast("Tout est prêt ✓"); },
+  appSettings: () => PN && PN.openAppSettings().catch(() => {}),
+  pinWidget: async () => {
+    let r = {};
+    try { r = await PN.pinWidget(); } catch(e) {}
+    if (!r.ok) toast("Faites un appui long sur l'écran d'accueil › Widgets › Punch", 6000);
+  },
   testNotif: () => notify(2999, "Test Punch", "Les notifications fonctionnent ✓")
 };
 document.addEventListener("click", ev => {
@@ -876,18 +894,113 @@ document.addEventListener("click", ev => {
   fn(el.dataset.id, ev);
 });
 
+/* ============ Autorisations (Android) ============ */
+let permCache = null, startedServices = false;
+const permsOk = st => !!(st && st.location && st.notifications && st.battery);
+async function permStatus(){
+  const st = { location: false, notifications: false, battery: false };
+  if (!PN) return st;
+  try { st.location = (await PN.checkPermissions()).location === "granted"; } catch(e) {}
+  try { st.notifications = (await LN.checkPermissions()).display === "granted"; } catch(e) {}
+  try { st.battery = !!(await PN.batteryStatus()).unrestricted; } catch(e) {}
+  return st;
+}
+async function openPerms(){
+  const st = permCache = await permStatus();
+  const row = (ok, title, sub) => `<div class="switch"><span><b>${title}</b><br><span class="small muted">${sub}</span></span><span style="font-size:22px">${ok ? "✅" : "⚪"}</span></div>`;
+  openSheet(`<h3>${permsOk(st) ? "Tout est prêt ✓" : "Configuration de Punch"}</h3>
+    <div class="muted">${permsOk(st) ? "Toutes les autorisations sont accordées." : "Touchez « Tout autoriser », puis « Autoriser » dans chaque fenêtre d'Android."}</div>
+    <div class="card" style="margin-top:12px;padding:2px 14px">
+      ${row(st.location, "Position", "Détecter vos clients et la zone de 2 km")}
+      ${row(st.notifications, "Notifications", "Rappels et « En service »")}
+      ${row(st.battery, "Batterie non restreinte", "Garder la détection active écran éteint")}
+    </div>
+    ${permsOk(st) ? `<div class="actions"><button class="btn primary" data-act="permsDone">Terminé</button></div>`
+      : `<button class="btn primary block" data-act="permsAll">Tout autoriser</button>
+         <div class="actions"><button class="btn" data-act="permsLater">Plus tard</button><button class="btn" data-act="appSettings">Réglages Android</button></div>
+         <div class="small muted" style="margin-top:10px">Si une fenêtre n'apparaît plus (refusée avant), utilisez « Réglages Android » › Autorisations.</div>`}`, "perms");
+}
+async function requestAllPerms(){
+  let st = await permStatus();
+  if (!st.location) { try { await PN.requestPermissions({ permissions: ["location"] }); } catch(e) {} }
+  if (!st.notifications) await notifReady();
+  st = permCache = await permStatus();
+  afterPerms();
+  if (!st.battery) { try { await PN.requestBattery(); } catch(e) {} }   // la fiche se rafraîchit au retour
+}
+function afterPerms(){
+  if (!startedServices) { startedServices = true; syncWatch(); currentPosition(); initNotifications(); }
+  if (sheetKind === "perms") openPerms(); else if (current === "punch" && !sheetOpen()) renderPunch(true);
+}
+
+/* ============ Widget d'écran d'accueil ============ */
+let widgetTimer = null;
+function syncWidget(){
+  if (typeof PN === "undefined" || !PN) return;
+  clearTimeout(widgetTimer);
+  widgetTimer = setTimeout(() => {
+    const a = S.active, today = ymd(Date.now());
+    const todays = S.entries.filter(e => ymd(e.start) === today);
+    const hrs = todays.reduce((x,e) => x + hoursOf(e), 0), amt = todays.reduce((x,e) => x + totalOf(e), 0);
+    const def = S.clients.find(c => c.isDefault);
+    const order = [...S.clients].sort((x,y) => (!!y.isDefault - !!x.isDefault) || ((y.id === S.lastClientId) - (x.id === S.lastClientId)) || x.name.localeCompare(y.name, "fr"));
+    const data = {
+      active: !!a, client: a ? a.clientName : "", start: a ? a.start : 0, startText: a ? hm(a.start) : "",
+      defaultName: def ? "Par défaut : " + def.name : (S.clients.length ? "Choisir un client" : "Ajoutez un client"),
+      todayText: todays.length ? "Aujourd'hui : " + dur(hrs * 3600000) + " · " + money(amt) : "Touchez IN pour commencer",
+      clients: order.slice(0, 3).map(c => ({ id: c.id, name: c.name }))
+    };
+    PN.updateWidget({ data: JSON.stringify(data) }).catch(() => {});
+  }, 300);
+}
+async function handleWidgetAction(a){
+  if (!a || !a.op) return;
+  if (current !== "punch") go("punch");
+  if (a.op === "in") {
+    if (S.active) return toast("Déjà en service chez " + S.active.clientName);
+    if (!S.clients.length) return toast("Ajoutez d'abord un client");
+    let id = a.clientId && clientById(a.clientId) ? a.clientId : null;
+    if (!id) { await currentPosition(8000); id = suggestedClientId(); }
+    punchIn(id);
+  } else if (a.op === "out") {
+    if (S.active) punchOut(Date.now()); else toast("Vous n'êtes pas en service");
+  } else if (a.op === "pin") {
+    ACT.pinWidget();
+  }
+}
+function initWidgetBridge(){
+  if (!PN) return;
+  try { PN.addListener("widgetAction", handleWidgetAction); } catch(e) {}
+  PN.getPendingAction().then(r => { if (r && r.action) handleWidgetAction(r.action); }).catch(() => {});
+  syncWidget();
+}
+
 /* ============ Démarrage ============ */
 document.addEventListener("visibilitychange", () => {
   syncWatch();
-  if (document.visibilityState === "visible") { currentPosition(); render(); if (S.active && S.active.leftPending) askLeftZone(); }
+  if (document.visibilityState === "visible") {
+    if (startedServices || !NATIVE) currentPosition();
+    render();
+    if (S.active && S.active.leftPending) askLeftZone();
+    if (NATIVE) permStatus().then(st => { permCache = st; if (sheetKind === "perms") openPerms(); else if (current === "punch" && !sheetOpen()) renderPunch(true); });
+  }
 });
 setInterval(() => { if (current === "punch" && S.active && !sheetOpen()) renderPunch(true); }, 30000);
 if (!NATIVE && "serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 render();
 if (S.active && S.active.leftPending) askLeftZone();
-syncWatch();
-currentPosition();
-initNotifications();
+if (NATIVE) {
+  initWidgetBridge();
+  permStatus().then(st => {
+    permCache = st;
+    if (permsOk(st) || S.setupSeen) afterPerms();
+    if (!permsOk(st) && !S.setupSeen) { S.setupSeen = true; save(); if (!sheetOpen()) openPerms(); }
+    else render();
+  });
+} else {
+  syncWatch();
+  currentPosition();
+}
 </script>
 </body>
 </html>
