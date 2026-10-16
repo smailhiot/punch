@@ -1,0 +1,21 @@
+{
+  "name": "punch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Punch IN/OUT avec zone de 2 km",
+  "scripts": {
+    "android": "cap add android && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor-community/background-geolocation": "1.2.26",
+    "@capacitor/android": "7.6.9",
+    "@capacitor/core": "7.6.9",
+    "@capacitor/filesystem": "^7.0.0",
+    "@capacitor/local-notifications": "7.0.7",
+    "@capacitor/share": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "7.6.9"
+  }
+}

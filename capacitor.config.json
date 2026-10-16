@@ -1,0 +1,13 @@
+{
+  "appId": "ca.punch.heures",
+  "appName": "Punch",
+  "webDir": "www",
+  "android": {
+    "useLegacyBridge": true
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#0f766e"
+    }
+  }
+}
