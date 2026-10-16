@@ -3,6 +3,9 @@ name: Tester sur émulateur
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   emulateur:
     runs-on: ubuntu-latest
@@ -44,3 +47,11 @@ jobs:
         with:
           name: resultats-emulateur
           path: out/
+      - name: Publier les résultats dans la branche « resultats-test »
+        if: always()
+        run: |
+          cd out
+          git init -q -b resultats-test
+          git -c user.name=ci -c user.email=ci@local add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "Résultats émulateur ${{ github.run_id }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" resultats-test
