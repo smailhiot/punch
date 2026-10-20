@@ -147,7 +147,7 @@ function load(){
     clients: s.clients || [], entries: s.entries || [], active: s.active || null,
     lastLoc: s.lastLoc || null, notified: s.notified || {}, lastClientId: s.lastClientId || null,
     settings: Object.assign({}, DEFAULT_SETTINGS, s.settings || {}),
-    seenIntro: !!s.seenIntro, setupSeen: !!s.setupSeen
+    seenIntro: !!s.seenIntro, setupSeen: !!s.setupSeen, backupName: s.backupName || null
   };
 }
 let S = load();
@@ -841,7 +841,7 @@ function applyBackup(d, ask){
   if (!d || !Array.isArray(d.clients) || !Array.isArray(d.entries)) throw new Error("fichier invalide");
   const hasData = S.clients.length || S.entries.length;
   if (ask !== false && hasData && !confirm(`Remplacer les données actuelles par la sauvegarde (${d.clients.length} clients, ${d.entries.length} entrées) ?`)) return false;
-  localStorage.setItem(KEY, JSON.stringify(d)); S = load(); S.setupSeen = true;
+  localStorage.setItem(KEY, JSON.stringify(d)); S = load(); S.setupSeen = true; S.backupName = d.backupName || null;
   save(); syncWatch(); scheduleStartReminders(); render(); toast("Sauvegarde restaurée ✓ (" + d.clients.length + " clients, " + d.entries.length + " entrées)", 5000);
   return true;
 }
@@ -854,28 +854,54 @@ $("#restoreFile").addEventListener("change", async ev => {
 
 /* ============ Sauvegarde automatique (Documents/Punch) ============
    Le fichier reste sur le téléphone même si l'app est désinstallée. */
-const AUTO_PATH = "Punch/punch-sauvegarde.json";
+const AUTO_DIR = "Punch", AUTO_DEFAULT = "punch-sauvegarde.json";
 let autoTimer = null, lastAutoBackup = null, autoBackupError = null;
 function autoBackup(){
   if (!FS || (!S.clients.length && !S.entries.length)) return;   // ne jamais écraser une sauvegarde avec des données vides
   clearTimeout(autoTimer);
-  autoTimer = setTimeout(async () => {
-    try {
-      const data = JSON.stringify(Object.assign({ savedAt: Date.now(), app: "Punch" }, S));
-      await FS.writeFile({ path: AUTO_PATH, data, directory: "DOCUMENTS", encoding: "utf8", recursive: true });
-      const month = new Date().toISOString().slice(0, 7);     // une copie par mois, au cas où
-      await FS.writeFile({ path: "Punch/punch-" + month + ".json", data, directory: "DOCUMENTS", encoding: "utf8", recursive: true });
-      lastAutoBackup = Date.now(); autoBackupError = null;
-    } catch(e) { autoBackupError = e.message || String(e); }
-  }, 2000);
+  autoTimer = setTimeout(writeAutoBackup, 2000);
+}
+async function writeAutoBackup(retry){
+  const name = S.backupName || AUTO_DEFAULT;
+  const data = JSON.stringify(Object.assign({}, S, { savedAt: Date.now(), app: "Punch" }));
+  try {
+    await FS.writeFile({ path: AUTO_DIR + "/" + name, data, directory: "DOCUMENTS", encoding: "utf8", recursive: true });
+    lastAutoBackup = Date.now(); autoBackupError = null;
+  } catch(e) {
+    // Après une réinstallation, Android interdit de réécrire l'ancien fichier : on en crée un nouveau
+    if (!retry) {
+      S.backupName = "punch-sauvegarde-" + Date.now().toString(36) + ".json";
+      try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(x) {}
+      return writeAutoBackup(true);
+    }
+    autoBackupError = e.message || String(e);
+    return;
+  }
+  try {   // une copie par mois, au cas où
+    const month = new Date().toISOString().slice(0, 7), suffix = name === AUTO_DEFAULT ? "" : "-" + name.slice(17, -5);
+    await FS.writeFile({ path: AUTO_DIR + "/punch-" + month + suffix + ".json", data, directory: "DOCUMENTS", encoding: "utf8", recursive: true });
+  } catch(e) {}
+}
+async function readBackupFile(name){
+  try {
+    const d = JSON.parse((await FS.readFile({ path: AUTO_DIR + "/" + name, directory: "DOCUMENTS", encoding: "utf8" })).data);
+    return (Array.isArray(d.clients) && Array.isArray(d.entries) && (d.clients.length || d.entries.length)) ? d : null;
+  } catch(e) { return null; }
 }
 async function findAutoBackup(){
   if (!FS) return null;
+  let names = [AUTO_DEFAULT];
   try {
-    const r = await FS.readFile({ path: AUTO_PATH, directory: "DOCUMENTS", encoding: "utf8" });
-    const d = JSON.parse(r.data);
-    return (Array.isArray(d.clients) && Array.isArray(d.entries) && (d.clients.length || d.entries.length)) ? d : null;
-  } catch(e) { return null; }
+    const r = await FS.readdir({ path: AUTO_DIR, directory: "DOCUMENTS" });
+    const found = (r.files || []).map(f => typeof f === "string" ? f : f.name).filter(n => /^punch-sauvegarde.*\.json$/.test(n));
+    names = [...new Set(names.concat(found))];
+  } catch(e) {}
+  let best = null;
+  for (const n of names) {   // la plus récente l'emporte
+    const d = await readBackupFile(n);
+    if (d && (!best || (d.savedAt || 0) > (best.savedAt || 0))) best = d;
+  }
+  return best;
 }
 async function offerRestoreIfEmpty(){
   if (S.clients.length || S.entries.length) return false;

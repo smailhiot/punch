@@ -28,6 +28,18 @@ python3 scripts/ui_tap.py "^Restaurer$" || true
 sleep 5
 adb exec-out screencap -p > out/3-apres-restauration.png
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
+# Après restauration, la sauvegarde automatique doit continuer à fonctionner
+sleep 6
+python3 scripts/cdp_eval.py "JSON.stringify({err:autoBackupError, name:S.backupName, last:lastAutoBackup})" > out/apres-restauration.txt || true
+adb shell ls -la /sdcard/Documents/Punch/ >> out/apres-restauration.txt 2>&1
+# Deuxième réinstallation : doit retrouver la sauvegarde la plus récente
+python3 scripts/cdp_eval.py "S.clients.push({id:'c',name:'Client C',rate:50}); save(); 'ok'"; sleep 6
+adb uninstall $PKG; adb install Punch.apk && grant
+adb shell am start -n $PKG/.MainActivity; sleep 20
+adb exec-out screencap -p > out/4-reinstallee-2.png
+python3 scripts/ui_tap.py "^Restaurer$" || true; sleep 5
+python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.map(c=>c.name), entries:S.entries.length})" > out/etat-2.txt || true
+python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
 # Sélecteur de fichiers (au cas où la lecture automatique serait refusée)
 python3 scripts/cdp_eval.py "localStorage.clear(); S=load(); S.setupSeen=true; closeSheet(); render(); 'ok'"
 sleep 2
