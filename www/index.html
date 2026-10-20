@@ -34,7 +34,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .btn.danger{background:transparent;color:var(--out)}
 .btn.block{width:100%}
 .row{display:flex;gap:8px;align-items:center}
-.row > *{flex:1}
+.row > *{flex:1;min-width:0}
 .status{text-align:center;padding:22px 16px 18px}
 .status .state{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .status .state.on{color:var(--in)} .status .state.off{color:var(--muted)}
@@ -151,7 +151,7 @@ function load(){
   };
 }
 let S = load();
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast("Impossible d'enregistrer : " + e.message); } syncWidget(); }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast("Impossible d'enregistrer : " + e.message); } syncWidget(); autoBackup(); }
 
 /* ============ Plateforme ============ */
 const CAP = window.Capacitor;
@@ -182,6 +182,41 @@ const hoursOf = e => Math.max(0, ((e.end || Date.now()) - e.start) / 3600000);
 const totalOf = e => hoursOf(e) * (Number(e.rate) || 0) + (Number(e.material) || 0);
 const toLocalInput = t => { const d = new Date(t); return ymd(t) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()); };
 const fromLocalInput = v => v ? new Date(v).getTime() : null;
+const toDateInput = t => ymd(t);
+const toTimeInput = t => hm(t);
+function fromDateTime(d, t){ if (!d || !t) return null; const [y,m,dd] = d.split("-").map(Number), [h,mi] = t.split(":").map(Number); const x = new Date(y, m-1, dd, h, mi, 0, 0).getTime(); return isNaN(x) ? null : x; }
+/* Champs date + heure (IN et OUT) bien visibles */
+function timeFields(start, end){
+  return `<div class="card" style="background:var(--bg);box-shadow:none;padding:12px;margin-top:12px">
+    <div style="font-weight:700">Punch IN</div>
+    <div class="row"><input id="eStartD" type="date" value="${toDateInput(start)}"><input id="eStartT" type="time" value="${toTimeInput(start)}" style="flex:0 0 120px"></div>
+    ${end !== undefined ? `<div style="font-weight:700;margin-top:12px">Punch OUT</div>
+    <div class="row"><input id="eEndD" type="date" value="${toDateInput(end)}"><input id="eEndT" type="time" value="${toTimeInput(end)}" style="flex:0 0 120px"></div>
+    <div id="eDur" class="small muted" style="margin-top:8px"></div>` : ""}
+  </div>`;
+}
+function bindTimeFields(){
+  const sd = $("#eStartD"), ed = $("#eEndD"), info = $("#eDur");
+  if (!sd) return;
+  let lastStartD = sd.value;
+  const upd = () => {
+    if (!info) return;
+    const a = fromDateTime(val("eStartD"), val("eStartT")), b = fromDateTime(val("eEndD"), val("eEndT"));
+    if (!a || !b) { info.textContent = ""; return; }
+    info.innerHTML = b > a ? "Durée : <b>" + dur(b - a) + "</b>" : "<span style=\"color:var(--out)\">Le OUT doit être après le IN</span>";
+  };
+  // Changer la date du IN déplace aussi la date du OUT du même nombre de jours
+  sd.addEventListener("change", () => {
+    if (ed && lastStartD && sd.value && ed.value) {
+      const shift = new Date(sd.value + "T00:00") - new Date(lastStartD + "T00:00");
+      const n = new Date(new Date(ed.value + "T00:00").getTime() + shift);
+      ed.value = ymd(n.getTime());
+    }
+    lastStartD = sd.value; upd();
+  });
+  ["eStartT","eEndD","eEndT"].forEach(id => { const el = $("#" + id); if (el) el.addEventListener("change", upd); el && el.addEventListener("input", upd); });
+  upd();
+}
 const clientById = id => S.clients.find(c => c.id === id);
 function distM(a, b){
   if(!a || !b) return Infinity;
@@ -515,14 +550,15 @@ function renderPunch(soft){
       <div class="state on">● En service</div>
       <div class="who">${esc(a.clientName)}</div>
       <div class="clock">${dur(Date.now() - a.start).replace(" h ", ":")}</div>
-      <div class="since">depuis ${hm(a.start)} · ${money(hoursOf(a) * a.rate)}</div>
+      <div class="since">depuis <button data-act="editActiveStart" style="color:var(--brand);font-weight:700;text-decoration:underline;min-height:32px">${hm(a.start)}${ymd(a.start) !== ymd(Date.now()) ? " (" + new Date(a.start).toLocaleDateString("fr-CA",{day:"numeric",month:"short"}) + ")" : ""} ✎</button> · ${money(hoursOf(a) * a.rate)}</div>
       <button class="punch out" data-act="punchOut">OUT<small>Terminer</small></button>
       <div class="loc">${locLine()}</div>
     </div>`;
   } else {
     if (!S.clients.length) {
       h += `<div class="card empty"><p><b>Bienvenue !</b><br>Ajoutez d'abord vos clients avec leur taux et leur adresse.</p>
-        <button class="btn primary" data-act="newClient">Ajouter un client</button></div>`;
+        <button class="btn primary" data-act="newClient">Ajouter un client</button>
+        <div style="margin-top:10px"><button class="btn" data-act="restore">Restaurer une sauvegarde</button></div></div>`;
       $("#view").innerHTML = h; return;
     }
     if (!userPicked || !clientById(selectedClientId)) selectedClientId = suggestedClientId();
@@ -646,7 +682,7 @@ function renderSettings(){
   </div>` : ""}
   <h2>Données</h2>
   <div class="card">
-    <div class="small muted">Vos données restent sur ce téléphone. Faites une sauvegarde de temps en temps.</div>
+    <div class="small muted">${NATIVE ? `Sauvegarde automatique dans <b>Documents › Punch</b> à chaque changement. Ce dossier reste même si l'app est désinstallée.${lastAutoBackup ? " Dernière : " + hm(lastAutoBackup) + "." : ""}${autoBackupError ? `<br><span style="color:var(--out)">Erreur de sauvegarde : ${esc(autoBackupError)}</span>` : ""}` : "Vos données restent dans ce navigateur. Faites une sauvegarde de temps en temps."}</div>
     <div class="row" style="margin-top:10px"><button class="btn" data-act="exportCsv">Export Calc (CSV)</button></div>
     <div class="row" style="margin-top:8px"><button class="btn" data-act="backup">Sauvegarder</button><button class="btn" data-act="restore">Restaurer</button></div>
   </div>
@@ -692,19 +728,29 @@ function openEntry(id, justPunched){
     + (e.clientId && !clientById(e.clientId) ? `<option value="${esc(e.clientId)}" selected>${esc(e.clientName)} (supprimé)</option>` : "");
   openSheet(`<h3>${justPunched ? "Punch OUT ✓" : isNew ? "Entrée manuelle" : "Modifier l'entrée"}</h3>
     ${justPunched ? `<div class="muted">${esc(e.clientName)} · ${dur(e.end - e.start)} · ${money(totalOf(e))}</div>` : ""}
+    ${timeFields(e.start, e.end)}
+    <label class="f">Client</label><select id="eClient">${opts}</select>
     <label class="f">Description des travaux</label><textarea id="eDesc" placeholder="Qu'avez-vous fait ?">${esc(e.desc)}</textarea>
-    <label class="f">Matériel ($)</label><input id="eMat" type="number" inputmode="decimal" step="0.01" min="0" value="${e.material || ""}" placeholder="0,00">
-    <details ${isNew ? "open" : ""} style="margin-top:12px"><summary class="muted" style="min-height:40px;padding-top:8px">Client, heures et taux</summary>
-      <label class="f">Client</label><select id="eClient">${opts}</select>
-      <label class="f">Début</label><input id="eStart" type="datetime-local" value="${toLocalInput(e.start)}">
-      <label class="f">Fin</label><input id="eEnd" type="datetime-local" value="${toLocalInput(e.end)}">
-      <label class="f">Taux pour cette entrée ($/h)</label><input id="eRate" type="number" inputmode="decimal" step="0.01" min="0" value="${e.rate}">
-    </details>
+    <div class="row">
+      <div><label class="f">Matériel ($)</label><input id="eMat" type="number" inputmode="decimal" step="0.01" min="0" value="${e.material || ""}" placeholder="0,00"></div>
+      <div><label class="f">Taux ($/h)</label><input id="eRate" type="number" inputmode="decimal" step="0.01" min="0" value="${e.rate}"></div>
+    </div>
     <div class="switch"><span>Facturé</span><input type="checkbox" id="eBilled" ${e.billed ? "checked" : ""}></div>
     <div class="switch"><span>Payé</span><input type="checkbox" id="ePaid" ${e.paid ? "checked" : ""}></div>
     <div class="actions">${isNew ? `<button class="btn" data-act="close">Annuler</button>` : `<button class="btn danger" data-act="delEntry" data-id="${e.id}">Supprimer</button>`}<button class="btn primary" data-act="saveEntry" data-id="${isNew ? "" : e.id}">Enregistrer</button></div>`);
   const sel = $("#eClient");
   if (sel) sel.addEventListener("change", () => { const c = clientById(sel.value); if (c) $("#eRate").value = c.rate; });
+  bindTimeFields();
+}
+
+/* Modifier l'heure du punch IN en cours */
+function openActiveStart(){
+  const a = S.active;
+  if (!a) return;
+  openSheet(`<h3>Modifier le punch IN</h3>
+    <div class="muted">En service chez ${esc(a.clientName)}</div>
+    ${timeFields(a.start)}
+    <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="saveActiveStart">Enregistrer</button></div>`);
 }
 
 function askLeftZone(){
@@ -789,16 +835,58 @@ function exportCsv(){
   saveFile("punch-" + ymd(Date.now()) + ".csv", "﻿" + rows.join("\r\n"), "text/csv");
 }
 function backup(){ saveFile("punch-sauvegarde-" + ymd(Date.now()) + ".json", JSON.stringify(S, null, 1), "application/json"); }
+function applyBackup(d, ask){
+  if (!d || !Array.isArray(d.clients) || !Array.isArray(d.entries)) throw new Error("fichier invalide");
+  const hasData = S.clients.length || S.entries.length;
+  if (ask !== false && hasData && !confirm(`Remplacer les données actuelles par la sauvegarde (${d.clients.length} clients, ${d.entries.length} entrées) ?`)) return false;
+  localStorage.setItem(KEY, JSON.stringify(d)); S = load(); S.setupSeen = true;
+  save(); syncWatch(); scheduleStartReminders(); render(); toast("Sauvegarde restaurée ✓ (" + d.clients.length + " clients, " + d.entries.length + " entrées)", 5000);
+  return true;
+}
 $("#restoreFile").addEventListener("change", async ev => {
   const f = ev.target.files[0]; ev.target.value = "";
   if (!f) return;
-  try {
-    const d = JSON.parse(await f.text());
-    if (!Array.isArray(d.clients) || !Array.isArray(d.entries)) throw new Error("fichier invalide");
-    if (!confirm(`Remplacer les données actuelles par la sauvegarde (${d.clients.length} clients, ${d.entries.length} entrées) ?`)) return;
-    localStorage.setItem(KEY, JSON.stringify(d)); S = load(); syncWatch(); render(); toast("Sauvegarde restaurée ✓");
-  } catch(e) { toast("Impossible de lire : " + e.message); }
+  try { applyBackup(JSON.parse(await f.text())); }
+  catch(e) { toast("Impossible de lire : " + e.message); }
 });
+
+/* ============ Sauvegarde automatique (Documents/Punch) ============
+   Le fichier reste sur le téléphone même si l'app est désinstallée. */
+const AUTO_PATH = "Punch/punch-sauvegarde.json";
+let autoTimer = null, lastAutoBackup = null, autoBackupError = null;
+function autoBackup(){
+  if (!FS || (!S.clients.length && !S.entries.length)) return;   // ne jamais écraser une sauvegarde avec des données vides
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(async () => {
+    try {
+      const data = JSON.stringify(Object.assign({ savedAt: Date.now(), app: "Punch" }, S));
+      await FS.writeFile({ path: AUTO_PATH, data, directory: "DOCUMENTS", encoding: "utf8", recursive: true });
+      const month = new Date().toISOString().slice(0, 7);     // une copie par mois, au cas où
+      await FS.writeFile({ path: "Punch/punch-" + month + ".json", data, directory: "DOCUMENTS", encoding: "utf8", recursive: true });
+      lastAutoBackup = Date.now(); autoBackupError = null;
+    } catch(e) { autoBackupError = e.message || String(e); }
+  }, 2000);
+}
+async function findAutoBackup(){
+  if (!FS) return null;
+  try {
+    const r = await FS.readFile({ path: AUTO_PATH, directory: "DOCUMENTS", encoding: "utf8" });
+    const d = JSON.parse(r.data);
+    return (Array.isArray(d.clients) && Array.isArray(d.entries) && (d.clients.length || d.entries.length)) ? d : null;
+  } catch(e) { return null; }
+}
+async function offerRestoreIfEmpty(){
+  if (S.clients.length || S.entries.length) return false;
+  const d = await findAutoBackup();
+  if (!d) return false;
+  openSheet(`<h3>Sauvegarde trouvée</h3>
+    <div class="muted">Une sauvegarde de Punch existe sur ce téléphone${d.savedAt ? " (" + new Date(d.savedAt).toLocaleString("fr-CA",{dateStyle:"medium",timeStyle:"short"}) + ")" : ""} :
+    <b>${d.clients.length} clients</b> et <b>${d.entries.length} entrées</b>.</div>
+    <div class="actions"><button class="btn" data-act="close">Non merci</button><button class="btn primary" data-act="restoreAuto">Restaurer</button></div>`, "restore");
+  pendingAutoBackup = d;
+  return true;
+}
+let pendingAutoBackup = null;
 
 /* ============ Actions ============ */
 const val = id => { const el = $("#" + id); return el ? el.value : ""; };
@@ -839,9 +927,10 @@ const ACT = {
   },
   delClient: id => { const c = clientById(id); if (c && confirm(`Supprimer ${c.name} ? Les heures déjà enregistrées sont conservées.`)) { S.clients = S.clients.filter(x => x.id !== id); save(); closeSheet(); } },
   saveEntry: id => {
-    const start = fromLocalInput(val("eStart")), end = fromLocalInput(val("eEnd"));
-    if (!start || !end) return toast("Heures invalides");
-    if (end <= start) return toast("La fin doit être après le début");
+    const start = fromDateTime(val("eStartD"), val("eStartT")), end = fromDateTime(val("eEndD"), val("eEndT"));
+    if (!start || !end) return toast("Date ou heure invalide");
+    if (end <= start) return toast("Le punch OUT doit être après le punch IN");
+    if (end - start > 24 * 3600000 && !confirm("Ce quart dure " + dur(end - start) + ". Est-ce correct ?")) return;
     let e = id ? S.entries.find(x => x.id === id) : null;
     if (!e) { e = { id: uid(), auto: false }; S.entries.push(e); }
     const c = clientById(val("eClient"));
@@ -849,6 +938,15 @@ const ACT = {
       rate: parseFloat(val("eRate").replace(",", ".")) || 0, desc: val("eDesc").trim(),
       material: parseFloat(val("eMat").replace(",", ".")) || 0, billed: chk("eBilled") || chk("ePaid"), paid: chk("ePaid"), review: false });
     save(); closeSheet(); toast("Enregistré ✓");
+  },
+  editActiveStart: () => openActiveStart(),
+  restoreAuto: () => { const d = pendingAutoBackup; pendingAutoBackup = null; closeSheet(); if (d) applyBackup(d, false); },
+  saveActiveStart: () => {
+    const t = fromDateTime(val("eStartD"), val("eStartT"));
+    if (!t) return toast("Date ou heure invalide");
+    if (t > Date.now()) return toast("Le punch IN ne peut pas être dans le futur");
+    if (S.active) { S.active.start = t; save(); scheduleShiftReminders(); }
+    closeSheet(); toast("Punch IN modifié : " + hm(t) + " ✓");
   },
   delEntry: id => { if (confirm("Supprimer cette entrée ?")) { S.entries = S.entries.filter(x => x.id !== id); save(); closeSheet(); } },
   leftAt: id => { $("#sheet").classList.add("hidden"); sheetKind = null; punchOut(Number(id)); },
@@ -991,12 +1089,13 @@ render();
 if (S.active && S.active.leftPending) askLeftZone();
 if (NATIVE) {
   initWidgetBridge();
-  permStatus().then(st => {
+  offerRestoreIfEmpty().then(shown => permStatus().then(st => {
     permCache = st;
     if (permsOk(st) || S.setupSeen) afterPerms();
-    if (!permsOk(st) && !S.setupSeen) { S.setupSeen = true; save(); if (!sheetOpen()) openPerms(); }
-    else render();
-  });
+    if (!permsOk(st) && !S.setupSeen && !shown) { S.setupSeen = true; save(); if (!sheetOpen()) openPerms(); }
+    else if (!sheetOpen()) render();
+  }));
+  autoBackup();
 } else {
   syncWatch();
   currentPosition();
