@@ -559,7 +559,7 @@ function renderPunch(soft){
       h += `<div class="card empty"><p><b>Bienvenue !</b><br>Ajoutez d'abord vos clients avec leur taux et leur adresse.</p>
         <button class="btn primary" data-act="newClient">Ajouter un client</button>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><b>Vous aviez déjà Punch ?</b><br>
-        <span class="small">Choisissez <b>Documents › Punch › punch-sauvegarde.json</b></span><br>
+        <span class="small">Dans le sélecteur : menu ☰ › votre téléphone › <b>Documents › Punch</b>, puis le fichier <b>punch-sauvegarde…json</b> le plus récent</span><br>
         <button class="btn" style="margin-top:8px" data-act="restore">Restaurer une sauvegarde</button></div></div>`;
       $("#view").innerHTML = h; return;
     }
@@ -951,7 +951,7 @@ const ACT = {
   payAll: () => { const l = filteredEntries(); if (confirm(`Marquer ${l.length} entrée(s) comme payées ?`)) { l.forEach(e => { e.paid = true; e.billed = true; }); save(); renderHistory(); } },
   exportCsv: () => exportCsv(),
   backup: () => backup(),
-  restore: () => { if (sheetKind === "restore") closeSheet(); $("#restoreFile").click(); },
+  restore: () => { if (sheetKind === "restore" || sheetKind === "perms") closeSheet(); $("#restoreFile").click(); },
   cGeocode: async () => { const g = await geocode(val("cAddr")); if (g) { sheetClient.lat = g.lat; sheetClient.lng = g.lng; $("#cGeo").textContent = "📍 " + g.label; } },
   cHere: async () => { $("#cGeo").textContent = "Recherche de la position…"; const p = await currentPosition(10000); if (p) { sheetClient.lat = p.lat; sheetClient.lng = p.lng; $("#cGeo").textContent = "📍 Position actuelle enregistrée (±" + fmtDist(p.acc || 0) + ")"; } else $("#cGeo").textContent = "Position introuvable"; },
   saveClient: () => {
@@ -1055,7 +1055,10 @@ async function openPerms(){
     ${permsOk(st) ? `<div class="actions"><button class="btn primary" data-act="permsDone">Terminé</button></div>`
       : `<button class="btn primary block" data-act="permsAll">Tout autoriser</button>
          <div class="actions"><button class="btn" data-act="permsLater">Plus tard</button><button class="btn" data-act="appSettings">Réglages Android</button></div>
-         <div class="small muted" style="margin-top:10px">Si une fenêtre n'apparaît plus (refusée avant), utilisez « Réglages Android » › Autorisations.</div>`}`, "perms");
+         <div class="small muted" style="margin-top:10px">Si une fenêtre n'apparaît plus (refusée avant), utilisez « Réglages Android » › Autorisations.</div>`}
+    ${!S.clients.length && !S.entries.length ? `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)"><b>Vous aviez déjà Punch ?</b>
+      <div class="small muted">Récupérez vos clients et vos heures : Documents › Punch › punch-sauvegarde…json</div>
+      <button class="btn block" style="margin-top:8px" data-act="restore">Restaurer une sauvegarde</button></div>` : ""}`, "perms");
 }
 async function requestAllPerms(){
   let st = await permStatus();

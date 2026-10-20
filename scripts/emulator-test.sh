@@ -28,19 +28,21 @@ adb shell am start -n $PKG/.MainActivity
 sleep 20
 ensure_app
 adb exec-out screencap -p > out/2-reinstallee.png
-# Restauration : lecture directe si Android le permet, sinon sélecteur de fichiers
-python3 scripts/ui_tap.py "^(Restaurer|Choisir le fichier)$" || true
+# Restauration via le sélecteur de fichiers (Android cache l'ancien fichier à la nouvelle installation)
+python3 scripts/ui_labels.py out/ecran-2.txt
+python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true
 sleep 6
 adb exec-out screencap -p > out/3-selecteur.png
-if ! python3 scripts/ui_tap.py "punch-sauvegarde"; then
-  python3 scripts/ui_tap.py "Show roots|Afficher les racines" ; sleep 2
-  adb exec-out screencap -p > out/3b-racines.png
-  python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|Mémoire" ; sleep 3
-  python3 scripts/ui_tap.py "^Documents$" ; sleep 3
-  python3 scripts/ui_tap.py "^Punch$" ; sleep 3
-  adb exec-out screencap -p > out/3c-dossier.png
-  python3 scripts/ui_tap.py "punch-sauvegarde" || true
-fi
+python3 scripts/ui_tap.py "Show roots" ; sleep 3
+python3 scripts/ui_labels.py out/racines.txt
+adb exec-out screencap -p > out/3b-racines.png
+python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|^Pixel|GB free|Go libres" ; sleep 3
+python3 scripts/ui_labels.py out/stockage.txt
+python3 scripts/ui_tap.py "^Documents$" ; sleep 3
+python3 scripts/ui_tap.py "^Punch$" ; sleep 3
+python3 scripts/ui_labels.py out/dossier.txt
+adb exec-out screencap -p > out/3c-dossier.png
+python3 scripts/ui_tap.py "^punch-sauvegarde" || true
 sleep 6
 adb exec-out screencap -p > out/3-apres-restauration.png
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
@@ -53,8 +55,13 @@ python3 scripts/cdp_eval.py "S.clients.push({id:'c',name:'Client C',rate:50}); s
 adb uninstall $PKG; adb install Punch.apk && grant
 sleep 25; adb shell am start -n $PKG/.MainActivity; sleep 20; ensure_app
 adb exec-out screencap -p > out/4-reinstallee-2.png
-python3 scripts/ui_tap.py "^(Restaurer|Choisir le fichier)$" || true; sleep 6
-python3 scripts/ui_tap.py "punch-sauvegarde-" || { python3 scripts/ui_tap.py "Show roots"; sleep 2; python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage"; sleep 3; python3 scripts/ui_tap.py "^Documents$"; sleep 3; python3 scripts/ui_tap.py "^Punch$"; sleep 3; adb exec-out screencap -p > out/4b-dossier.png; python3 scripts/ui_tap.py "punch-sauvegarde-"; } || true
+python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true; sleep 6
+python3 scripts/ui_tap.py "Show roots"; sleep 3
+python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|^Pixel|GB free|Go libres"; sleep 3
+python3 scripts/ui_tap.py "^Documents$"; sleep 3; python3 scripts/ui_tap.py "^Punch$"; sleep 3
+python3 scripts/ui_labels.py out/dossier-2.txt
+adb exec-out screencap -p > out/4b-dossier.png
+python3 scripts/ui_tap.py "^punch-sauvegarde-" || python3 scripts/ui_tap.py "^punch-sauvegarde" || true
 sleep 6
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.map(c=>c.name), entries:S.entries.length})" > out/etat-2.txt || true
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
