@@ -4,6 +4,8 @@ set -x
 mkdir -p out
 PKG=ca.punch.heures
 pip install -q websocket-client || true
+# (Re)lance l'app si elle n'est pas au premier plan (l'émulateur tue parfois les apps quand Google Play Services redémarre)
+ensure_app() { for k in 1 2 3; do adb shell dumpsys activity activities | grep -qE "(mResumedActivity|topResumedActivity).*ca.punch.heures" && return 0; adb shell am start -n $PKG/.MainActivity; sleep 15; done; }
 grant() { for p in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION POST_NOTIFICATIONS; do adb shell pm grant $PKG android.permission.$p || true; done; }
 adb install -r Punch.apk && grant
 adb emu geo fix -73.5673 45.5017 || true
@@ -21,8 +23,10 @@ adb uninstall $PKG
 echo "--- après désinstallation" >> out/sauvegarde.txt
 adb shell ls -la /sdcard/Documents/Punch/ >> out/sauvegarde.txt 2>&1
 adb install Punch.apk && grant
+sleep 25
 adb shell am start -n $PKG/.MainActivity
 sleep 20
+ensure_app
 adb exec-out screencap -p > out/2-reinstallee.png
 # Restauration : lecture directe si Android le permet, sinon sélecteur de fichiers
 python3 scripts/ui_tap.py "^(Restaurer|Choisir le fichier)$" || true
@@ -47,7 +51,7 @@ adb shell ls -la /sdcard/Documents/Punch/ >> out/apres-restauration.txt 2>&1
 # Deuxième réinstallation : doit retrouver la sauvegarde la plus récente
 python3 scripts/cdp_eval.py "S.clients.push({id:'c',name:'Client C',rate:50}); save(); 'ok'"; sleep 6
 adb uninstall $PKG; adb install Punch.apk && grant
-adb shell am start -n $PKG/.MainActivity; sleep 20
+sleep 25; adb shell am start -n $PKG/.MainActivity; sleep 20; ensure_app
 adb exec-out screencap -p > out/4-reinstallee-2.png
 python3 scripts/ui_tap.py "^(Restaurer|Choisir le fichier)$" || true; sleep 6
 python3 scripts/ui_tap.py "punch-sauvegarde-" || { python3 scripts/ui_tap.py "Show roots"; sleep 2; python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage"; sleep 3; python3 scripts/ui_tap.py "^Documents$"; sleep 3; python3 scripts/ui_tap.py "^Punch$"; sleep 3; adb exec-out screencap -p > out/4b-dossier.png; python3 scripts/ui_tap.py "punch-sauvegarde-"; } || true
