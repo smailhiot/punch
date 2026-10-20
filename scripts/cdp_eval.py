@@ -11,6 +11,6 @@ for attempt in range(10):
 subprocess.run(["adb", "forward", "tcp:9222", "localabstract:" + names[-1]], check=True)
 pages = json.load(urllib.request.urlopen("http://127.0.0.1:9222/json"))
 page = [p for p in pages if p.get("type") == "page"][0]
-ws = websocket.create_connection(page["webSocketDebuggerUrl"], suppress_origin=True)
+ws = websocket.create_connection(page["webSocketDebuggerUrl"], suppress_origin=True, timeout=30)
 ws.send(json.dumps({"id": 1, "method": "Runtime.evaluate", "params": {"expression": js, "returnByValue": True, "awaitPromise": True}}))
 print(json.loads(ws.recv()).get("result", {}).get("result", {}).get("value"))

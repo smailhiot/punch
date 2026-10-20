@@ -13,9 +13,9 @@ adb logcat -c
 adb shell am start -n $PKG/.MainActivity
 sleep 18
 # Données de test
-python3 scripts/cdp_eval.py "localStorage.setItem('punch.v1', JSON.stringify({setupSeen:true, seenIntro:true, clients:[{id:'a',name:'Client A',rate:45,isDefault:true},{id:'b',name:'Client B',rate:60}], entries:[{id:'e1',clientId:'a',clientName:'Client A',rate:45,start:Date.now()-5*3600e3,end:Date.now()-3600e3,desc:'test',material:0}]})); location.reload(); 'ok'"
+timeout 60 python3 scripts/cdp_eval.py "localStorage.setItem('punch.v1', JSON.stringify({setupSeen:true, seenIntro:true, clients:[{id:'a',name:'Client A',rate:45,isDefault:true},{id:'b',name:'Client B',rate:60}], entries:[{id:'e1',clientId:'a',clientName:'Client A',rate:45,start:Date.now()-5*3600e3,end:Date.now()-3600e3,desc:'test',material:0}]})); location.reload(); 'ok'"
 sleep 10
-python3 scripts/cdp_eval.py "save(); 'ok'"; sleep 5
+timeout 60 python3 scripts/cdp_eval.py "save(); 'ok'"; sleep 5
 echo "--- avant désinstallation" > out/sauvegarde.txt
 adb shell ls -la /sdcard/Documents/Punch/ >> out/sauvegarde.txt 2>&1
 adb exec-out screencap -p > out/1-avec-donnees.png
@@ -29,54 +29,54 @@ sleep 20
 ensure_app
 adb exec-out screencap -p > out/2-reinstallee.png
 # Restauration via le sélecteur de fichiers (Android cache l'ancien fichier à la nouvelle installation)
-python3 scripts/ui_labels.py out/ecran-2.txt
-python3 scripts/ui_tap.py "^Plus tard$" || true; sleep 2
-python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true
+timeout 60 python3 scripts/ui_labels.py out/ecran-2.txt
+timeout 60 python3 scripts/ui_tap.py "^Plus tard$" || true; sleep 2
+timeout 60 python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true
 sleep 6
 adb exec-out screencap -p > out/3-selecteur.png
-python3 scripts/ui_tap.py "Show roots" ; sleep 3
-python3 scripts/ui_labels.py out/racines.txt
+timeout 60 python3 scripts/ui_tap.py "Show roots" ; sleep 3
+timeout 60 python3 scripts/ui_labels.py out/racines.txt
 adb exec-out screencap -p > out/3b-racines.png
-python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|^Pixel|GB free|Go libres" ; sleep 3
-python3 scripts/ui_labels.py out/stockage.txt
-python3 scripts/ui_tap.py "^Documents$" ; sleep 3
-python3 scripts/ui_tap.py "^Punch$" ; sleep 3
-python3 scripts/ui_labels.py out/dossier.txt
+timeout 60 python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|^Pixel|GB free|Go libres" ; sleep 3
+timeout 60 python3 scripts/ui_labels.py out/stockage.txt
+timeout 60 python3 scripts/ui_tap.py "^Documents$" ; sleep 3
+timeout 60 python3 scripts/ui_tap.py "^Punch$" ; sleep 3
+timeout 60 python3 scripts/ui_labels.py out/dossier.txt
 adb exec-out screencap -p > out/3c-dossier.png
-python3 scripts/ui_tap.py "^punch-sauvegarde" || true
+timeout 60 python3 scripts/ui_tap.py "^punch-sauvegarde" || true
 sleep 6
 adb exec-out screencap -p > out/3-apres-restauration.png
-python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
 # Après restauration, la sauvegarde automatique doit continuer à fonctionner
 sleep 6
-python3 scripts/cdp_eval.py "JSON.stringify({err:autoBackupError, name:S.backupName, last:lastAutoBackup})" > out/apres-restauration.txt || true
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({err:autoBackupError, name:S.backupName, last:lastAutoBackup})" > out/apres-restauration.txt || true
 adb shell ls -la /sdcard/Documents/Punch/ >> out/apres-restauration.txt 2>&1
 # Deuxième réinstallation : doit retrouver la sauvegarde la plus récente
-python3 scripts/cdp_eval.py "S.clients.push({id:'c',name:'Client C',rate:50}); save(); 'ok'"; sleep 6
+timeout 60 python3 scripts/cdp_eval.py "S.clients.push({id:'c',name:'Client C',rate:50}); save(); 'ok'"; sleep 6
 adb uninstall $PKG; adb install Punch.apk && grant
 sleep 25; adb shell am start -n $PKG/.MainActivity; sleep 20; ensure_app
 adb exec-out screencap -p > out/4-reinstallee-2.png
-python3 scripts/ui_tap.py "^Plus tard$" || true; sleep 2
-python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true; sleep 6
-python3 scripts/ui_tap.py "Show roots"; sleep 3
-python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|^Pixel|GB free|Go libres"; sleep 3
-python3 scripts/ui_tap.py "^Documents$"; sleep 3; python3 scripts/ui_tap.py "^Punch$"; sleep 3
-python3 scripts/ui_labels.py out/dossier-2.txt
+timeout 60 python3 scripts/ui_tap.py "^Plus tard$" || true; sleep 2
+timeout 60 python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true; sleep 6
+timeout 60 python3 scripts/ui_tap.py "Show roots"; sleep 3
+timeout 60 python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|^Pixel|GB free|Go libres"; sleep 3
+timeout 60 python3 scripts/ui_tap.py "^Documents$"; sleep 3; timeout 60 python3 scripts/ui_tap.py "^Punch$"; sleep 3
+timeout 60 python3 scripts/ui_labels.py out/dossier-2.txt
 adb exec-out screencap -p > out/4b-dossier.png
-python3 scripts/ui_tap.py "^punch-sauvegarde-" || python3 scripts/ui_tap.py "^punch-sauvegarde" || true
+timeout 60 python3 scripts/ui_tap.py "^punch-sauvegarde-" || timeout 60 python3 scripts/ui_tap.py "^punch-sauvegarde" || true
 sleep 6
-python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.map(c=>c.name), entries:S.entries.length})" > out/etat-2.txt || true
-python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.map(c=>c.name), entries:S.entries.length})" > out/etat-2.txt || true
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
 # Sélecteur de fichiers (au cas où la lecture automatique serait refusée)
-python3 scripts/cdp_eval.py "localStorage.clear(); S=load(); S.setupSeen=true; closeSheet(); render(); 'ok'"
+timeout 60 python3 scripts/cdp_eval.py "localStorage.clear(); S=load(); S.setupSeen=true; closeSheet(); render(); 'ok'"
 sleep 2
-python3 scripts/ui_tap.py "Restaurer une sauvegarde" || true
+timeout 60 python3 scripts/ui_tap.py "Restaurer une sauvegarde" || true
 sleep 6
 adb exec-out screencap -p > out/4-selecteur.png
-python3 scripts/ui_tap.py "punch-sauvegarde" || true
+timeout 60 python3 scripts/ui_tap.py "punch-sauvegarde" || true
 sleep 6
 adb exec-out screencap -p > out/5-apres-selecteur.png
-python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length, err:autoBackupError})" > out/etat.txt || true
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length, err:autoBackupError})" > out/etat.txt || true
 adb logcat -d > out/logcat-complet.txt
 grep -iE "Capacitor|console|AndroidRuntime|FATAL|Filesystem" out/logcat-complet.txt > out/logcat-app.txt || true
 exit 0
