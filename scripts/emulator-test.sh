@@ -24,9 +24,12 @@ adb install Punch.apk && grant
 adb shell am start -n $PKG/.MainActivity
 sleep 20
 adb exec-out screencap -p > out/2-reinstallee.png
-python3 scripts/ui_tap.py "^Restaurer$" || true
-sleep 4
-adb exec-out screencap -p > out/3-apres-restauration.png
+python3 scripts/ui_tap.py "Restaurer une sauvegarde" || true
+sleep 5
+adb exec-out screencap -p > out/3-selecteur.png
+python3 scripts/ui_tap.py "punch-sauvegarde" || { python3 scripts/ui_tap.py "^Documents$"; sleep 3; python3 scripts/ui_tap.py "^Punch$"; sleep 3; python3 scripts/ui_tap.py "punch-sauvegarde"; } || true
+sleep 6
+adb exec-out screencap -p > out/4-apres-restauration.png
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length, err:autoBackupError})" > out/etat.txt || true
 adb logcat -d > out/logcat-complet.txt
 grep -iE "Capacitor|console|AndroidRuntime|FATAL|Filesystem" out/logcat-complet.txt > out/logcat-app.txt || true

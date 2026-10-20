@@ -119,7 +119,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
 </nav>
 <div id="sheet" class="hidden"></div>
 <div id="toast" class="toast hidden"></div>
-<input type="file" id="restoreFile" accept="application/json,.json" class="hidden">
+<input type="file" id="restoreFile" accept=".json,application/json,text/plain,application/octet-stream" class="hidden">
 
 <script>
 /* Affiche toute erreur à l'écran plutôt qu'un écran vide */
@@ -558,7 +558,9 @@ function renderPunch(soft){
     if (!S.clients.length) {
       h += `<div class="card empty"><p><b>Bienvenue !</b><br>Ajoutez d'abord vos clients avec leur taux et leur adresse.</p>
         <button class="btn primary" data-act="newClient">Ajouter un client</button>
-        <div style="margin-top:10px"><button class="btn" data-act="restore">Restaurer une sauvegarde</button></div></div>`;
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><b>Vous aviez déjà Punch ?</b><br>
+        <span class="small">Choisissez <b>Documents › Punch › punch-sauvegarde.json</b></span><br>
+        <button class="btn" style="margin-top:8px" data-act="restore">Restaurer une sauvegarde</button></div></div>`;
       $("#view").innerHTML = h; return;
     }
     if (!userPicked || !clientById(selectedClientId)) selectedClientId = suggestedClientId();
