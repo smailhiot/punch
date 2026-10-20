@@ -888,25 +888,36 @@ async function readBackupFile(name){
     return (Array.isArray(d.clients) && Array.isArray(d.entries) && (d.clients.length || d.entries.length)) ? d : null;
   } catch(e) { return null; }
 }
+/* Renvoie {data} si une sauvegarde est lisible, {listed:[noms]} si elle existe mais qu'Android en bloque la lecture */
 async function findAutoBackup(){
   if (!FS) return null;
-  let names = [AUTO_DEFAULT];
+  let names = [AUTO_DEFAULT], listed = [];
   try {
     const r = await FS.readdir({ path: AUTO_DIR, directory: "DOCUMENTS" });
-    const found = (r.files || []).map(f => typeof f === "string" ? f : f.name).filter(n => /^punch-sauvegarde.*\.json$/.test(n));
-    names = [...new Set(names.concat(found))];
+    listed = (r.files || []).map(f => typeof f === "string" ? f : f.name).filter(n => /^punch-.*\.json$/.test(n));
+    names = [...new Set(names.concat(listed.filter(n => n.startsWith("punch-sauvegarde"))))];
   } catch(e) {}
   let best = null;
   for (const n of names) {   // la plus récente l'emporte
     const d = await readBackupFile(n);
     if (d && (!best || (d.savedAt || 0) > (best.savedAt || 0))) best = d;
   }
-  return best;
+  if (best) return { data: best };
+  return listed.length ? { listed } : null;
 }
 async function offerRestoreIfEmpty(){
   if (S.clients.length || S.entries.length) return false;
-  const d = await findAutoBackup();
-  if (!d) return false;
+  const found = await findAutoBackup();
+  if (!found) return false;
+  if (!found.data) {
+    const newest = found.listed.filter(n => n.startsWith("punch-sauvegarde")).sort().pop() || found.listed.sort().pop();
+    openSheet(`<h3>Sauvegarde trouvée</h3>
+      <div class="muted">Vos données Punch sont dans <b>Documents › Punch</b>. Android demande que vous choisissiez le fichier vous-même :</div>
+      <ol style="padding-left:20px;line-height:1.6"><li>Touchez <b>Choisir le fichier</b></li><li>Menu ☰ › votre téléphone › <b>Documents › Punch</b></li><li>Touchez <b>${esc(newest)}</b></li></ol>
+      <div class="actions"><button class="btn" data-act="close">Plus tard</button><button class="btn primary" data-act="restore">Choisir le fichier</button></div>`, "restore");
+    return true;
+  }
+  const d = found.data;
   openSheet(`<h3>Sauvegarde trouvée</h3>
     <div class="muted">Une sauvegarde de Punch existe sur ce téléphone${d.savedAt ? " (" + new Date(d.savedAt).toLocaleString("fr-CA",{dateStyle:"medium",timeStyle:"short"}) + ")" : ""} :
     <b>${d.clients.length} clients</b> et <b>${d.entries.length} entrées</b>.</div>
@@ -940,7 +951,7 @@ const ACT = {
   payAll: () => { const l = filteredEntries(); if (confirm(`Marquer ${l.length} entrée(s) comme payées ?`)) { l.forEach(e => { e.paid = true; e.billed = true; }); save(); renderHistory(); } },
   exportCsv: () => exportCsv(),
   backup: () => backup(),
-  restore: () => $("#restoreFile").click(),
+  restore: () => { if (sheetKind === "restore") closeSheet(); $("#restoreFile").click(); },
   cGeocode: async () => { const g = await geocode(val("cAddr")); if (g) { sheetClient.lat = g.lat; sheetClient.lng = g.lng; $("#cGeo").textContent = "📍 " + g.label; } },
   cHere: async () => { $("#cGeo").textContent = "Recherche de la position…"; const p = await currentPosition(10000); if (p) { sheetClient.lat = p.lat; sheetClient.lng = p.lng; $("#cGeo").textContent = "📍 Position actuelle enregistrée (±" + fmtDist(p.acc || 0) + ")"; } else $("#cGeo").textContent = "Position introuvable"; },
   saveClient: () => {

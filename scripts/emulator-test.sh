@@ -24,8 +24,20 @@ adb install Punch.apk && grant
 adb shell am start -n $PKG/.MainActivity
 sleep 20
 adb exec-out screencap -p > out/2-reinstallee.png
-python3 scripts/ui_tap.py "^Restaurer$" || true
-sleep 5
+# Restauration : lecture directe si Android le permet, sinon sélecteur de fichiers
+python3 scripts/ui_tap.py "^(Restaurer|Choisir le fichier)$" || true
+sleep 6
+adb exec-out screencap -p > out/3-selecteur.png
+if ! python3 scripts/ui_tap.py "punch-sauvegarde"; then
+  python3 scripts/ui_tap.py "Show roots|Afficher les racines" ; sleep 2
+  adb exec-out screencap -p > out/3b-racines.png
+  python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|Mémoire" ; sleep 3
+  python3 scripts/ui_tap.py "^Documents$" ; sleep 3
+  python3 scripts/ui_tap.py "^Punch$" ; sleep 3
+  adb exec-out screencap -p > out/3c-dossier.png
+  python3 scripts/ui_tap.py "punch-sauvegarde" || true
+fi
+sleep 6
 adb exec-out screencap -p > out/3-apres-restauration.png
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
 # Après restauration, la sauvegarde automatique doit continuer à fonctionner
@@ -37,7 +49,9 @@ python3 scripts/cdp_eval.py "S.clients.push({id:'c',name:'Client C',rate:50}); s
 adb uninstall $PKG; adb install Punch.apk && grant
 adb shell am start -n $PKG/.MainActivity; sleep 20
 adb exec-out screencap -p > out/4-reinstallee-2.png
-python3 scripts/ui_tap.py "^Restaurer$" || true; sleep 5
+python3 scripts/ui_tap.py "^(Restaurer|Choisir le fichier)$" || true; sleep 6
+python3 scripts/ui_tap.py "punch-sauvegarde-" || { python3 scripts/ui_tap.py "Show roots"; sleep 2; python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage"; sleep 3; python3 scripts/ui_tap.py "^Documents$"; sleep 3; python3 scripts/ui_tap.py "^Punch$"; sleep 3; adb exec-out screencap -p > out/4b-dossier.png; python3 scripts/ui_tap.py "punch-sauvegarde-"; } || true
+sleep 6
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.map(c=>c.name), entries:S.entries.length})" > out/etat-2.txt || true
 python3 scripts/cdp_eval.py "JSON.stringify({clients:S.clients.length, entries:S.entries.length})" > out/etat-auto.txt || true
 # Sélecteur de fichiers (au cas où la lecture automatique serait refusée)
