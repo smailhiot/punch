@@ -51,4 +51,28 @@ for k, v in extra.items():
     if f'name="{k}"' not in s:
         s = s.replace("</resources>", f'    <string name="{k}">{v}</string>\n</resources>')
 strings.write_text(s)
-print("Projet Android complété (plugin natif + widget).")
+# 5. Signature fixe : toujours la même clé, pour que les mises à jour s'installent par-dessus
+import os
+gradle = root / "android" / "app" / "build.gradle"
+g = gradle.read_text()
+if "signingConfigs" not in g:
+    ks = (root / "keystore" / "debug.keystore").as_posix()
+    g = g.replace("    buildTypes {", f"""    signingConfigs {{
+        punch {{
+            storeFile file("{ks}")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }}
+    }}
+    buildTypes {{
+        debug {{
+            signingConfig signingConfigs.punch
+        }}""", 1)
+# Numéro de version qui augmente à chaque construction
+run = os.environ.get("GITHUB_RUN_NUMBER")
+if run:
+    g = re.sub(r"versionCode \d+", f"versionCode {int(run) + 100}", g)
+    g = re.sub(r'versionName "[^"]*"', f'versionName "1.{run}"', g)
+gradle.write_text(g)
+print("Projet Android complété (plugin natif + widget + signature fixe).")
