@@ -184,21 +184,61 @@ const toLocalInput = t => { const d = new Date(t); return ymd(t) + "T" + pad(d.g
 const fromLocalInput = v => v ? new Date(v).getTime() : null;
 const toDateInput = t => ymd(t);
 const toTimeInput = t => hm(t);
-function fromDateTime(d, t){ if (!d || !t) return null; const [y,m,dd] = d.split("-").map(Number), [h,mi] = t.split(":").map(Number); const x = new Date(y, m-1, dd, h, mi, 0, 0).getTime(); return isNaN(x) ? null : x; }
-/* Champs date + heure (IN et OUT) bien visibles */
+/* Lecture souple de ce que l'utilisateur tape : « 1330 », « 13:30 », « 13h30 », « 930 » ; « 2026-10-13 », « 20261013 », « 13/10/2026 » */
+function parseTime(v){
+  v = String(v || "").trim().toLowerCase().replace(/\s/g, "");
+  let m = v.match(/^(\d{1,2})[:h.](\d{1,2})?$/) || v.match(/^(\d{1,2})(\d{2})$/) || v.match(/^(\d{1,2})$/);
+  if (!m) return null;
+  const h = +m[1], mi = m[2] === undefined ? 0 : +m[2];
+  return h <= 23 && mi <= 59 ? pad(h) + ":" + pad(mi) : null;
+}
+function parseDate(v){
+  v = String(v || "").trim();
+  let m = v.match(/^(\d{4})[-/.]?(\d{1,2})[-/.]?(\d{1,2})$/), y, mo, d;
+  if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = v.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+  else return null;
+  const t = new Date(y, mo - 1, d);
+  return t.getFullYear() === y && t.getMonth() === mo - 1 && t.getDate() === d ? ymd(t.getTime()) : null;
+}
+function fromDateTime(d, t){
+  d = parseDate(d); t = parseTime(t);
+  if (!d || !t) return null;
+  const [y,m,dd] = d.split("-").map(Number), [h,mi] = t.split(":").map(Number);
+  const x = new Date(y, m-1, dd, h, mi, 0, 0).getTime(); return isNaN(x) ? null : x;
+}
+/* Champs date + heure (IN et OUT) : saisie au clavier numérique, calendrier en option */
+function dtRow(prefix, t){
+  return `<div class="row" style="gap:6px">
+    <input id="${prefix}D" type="text" inputmode="numeric" autocomplete="off" placeholder="AAAA-MM-JJ" maxlength="10" value="${toDateInput(t)}">
+    <button class="btn" style="flex:0 0 48px;padding:0" data-act="pickDate" data-id="${prefix}D" aria-label="Calendrier">📅</button>
+    <input id="${prefix}T" type="text" inputmode="numeric" autocomplete="off" placeholder="HH:MM" maxlength="5" value="${toTimeInput(t)}" style="flex:0 0 84px;text-align:center;font-weight:700">
+  </div>`;
+}
 function timeFields(start, end){
   return `<div class="card" style="background:var(--bg);box-shadow:none;padding:12px;margin-top:12px">
     <div style="font-weight:700">Punch IN</div>
-    <div class="row"><input id="eStartD" type="date" value="${toDateInput(start)}"><input id="eStartT" type="time" value="${toTimeInput(start)}" style="flex:0 0 120px"></div>
+    ${dtRow("eStart", start)}
     ${end !== undefined ? `<div style="font-weight:700;margin-top:12px">Punch OUT</div>
-    <div class="row"><input id="eEndD" type="date" value="${toDateInput(end)}"><input id="eEndT" type="time" value="${toTimeInput(end)}" style="flex:0 0 120px"></div>
+    ${dtRow("eEnd", end)}
     <div id="eDur" class="small muted" style="margin-top:8px"></div>` : ""}
+    <div class="small muted" style="margin-top:6px">Tapez l'heure, ex. 1330 pour 13:30.</div>
   </div>`;
+}
+/* Mise en forme pendant la frappe : ajoute « : » et « - » automatiquement */
+function maskTime(el){
+  const digits = el.value.replace(/\D/g, "").slice(0, 4);
+  el.value = digits.length > 2 ? digits.slice(0, digits.length - 2) + ":" + digits.slice(-2) : digits;
+}
+function maskDate(el){
+  const d = el.value.replace(/\D/g, "").slice(0, 8);
+  el.value = d.length > 6 ? d.slice(0,4) + "-" + d.slice(4,6) + "-" + d.slice(6) : d.length > 4 ? d.slice(0,4) + "-" + d.slice(4) : d;
 }
 function bindTimeFields(){
   const sd = $("#eStartD"), ed = $("#eEndD"), info = $("#eDur");
   if (!sd) return;
-  let lastStartD = sd.value;
+  let lastStartD = parseDate(sd.value);
+  const mark = el => { const ok = el.id.endsWith("T") ? parseTime(el.value) : parseDate(el.value); el.style.borderColor = el.value && !ok ? "var(--out)" : ""; };
   const upd = () => {
     if (!info) return;
     const a = fromDateTime(val("eStartD"), val("eStartT")), b = fromDateTime(val("eEndD"), val("eEndT"));
@@ -206,16 +246,37 @@ function bindTimeFields(){
     info.innerHTML = b > a ? "Durée : <b>" + dur(b - a) + "</b>" : "<span style=\"color:var(--out)\">Le OUT doit être après le IN</span>";
   };
   // Changer la date du IN déplace aussi la date du OUT du même nombre de jours
-  sd.addEventListener("change", () => {
-    if (ed && lastStartD && sd.value && ed.value) {
-      const shift = new Date(sd.value + "T00:00") - new Date(lastStartD + "T00:00");
-      const n = new Date(new Date(ed.value + "T00:00").getTime() + shift);
-      ed.value = ymd(n.getTime());
+  const startDateChanged = () => {
+    const nd = parseDate(sd.value);
+    if (ed && lastStartD && nd && parseDate(ed.value) && nd !== lastStartD) {
+      const shift = new Date(nd + "T00:00") - new Date(lastStartD + "T00:00");
+      ed.value = ymd(new Date(parseDate(ed.value) + "T00:00").getTime() + shift);
     }
-    lastStartD = sd.value; upd();
+    if (nd) lastStartD = nd;
+  };
+  ["eStartD","eStartT","eEndD","eEndT"].forEach(id => {
+    const el = $("#" + id); if (!el) return;
+    const isT = id.endsWith("T");
+    el.addEventListener("focus", () => setTimeout(() => el.select(), 0));
+    el.addEventListener("input", ev => {
+      if (!(ev.inputType || "").startsWith("delete")) (isT ? maskTime : maskDate)(el);
+      if (id === "eStartD") startDateChanged();
+      mark(el); upd();
+    });
+    el.addEventListener("change", () => { const n = isT ? parseTime(el.value) : parseDate(el.value); if (n) el.value = n; if (id === "eStartD") startDateChanged(); mark(el); upd(); });
   });
-  ["eStartT","eEndD","eEndT"].forEach(id => { const el = $("#" + id); if (el) el.addEventListener("change", upd); el && el.addEventListener("input", upd); });
   upd();
+}
+/* Calendrier natif en option (bouton 📅) */
+function pickDate(targetId){
+  const target = $("#" + targetId); if (!target) return;
+  const tmp = document.createElement("input");
+  tmp.type = "date"; tmp.value = parseDate(target.value) || ymd(Date.now());
+  tmp.style.cssText = "position:fixed;left:50%;top:50%;opacity:0;width:1px;height:1px";
+  document.body.appendChild(tmp);
+  tmp.addEventListener("change", () => { if (tmp.value) { target.value = tmp.value; target.dispatchEvent(new Event("change")); } tmp.remove(); });
+  tmp.addEventListener("blur", () => setTimeout(() => tmp.remove(), 500));
+  try { tmp.showPicker(); } catch(e) { tmp.focus(); tmp.click(); }
 }
 const clientById = id => S.clients.find(c => c.id === id);
 function distM(a, b){
@@ -979,6 +1040,7 @@ const ACT = {
     save(); closeSheet(); toast("Enregistré ✓");
   },
   editActiveStart: () => openActiveStart(),
+  pickDate: id => pickDate(id),
   restoreAuto: () => { const d = pendingAutoBackup; pendingAutoBackup = null; closeSheet(); if (d) applyBackup(d, false); },
   saveActiveStart: () => {
     const t = fromDateTime(val("eStartD"), val("eStartT"));

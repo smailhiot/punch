@@ -2,6 +2,10 @@ name: Tester sur émulateur
 
 on:
   workflow_dispatch:
+    inputs:
+      script:
+        description: Script de test
+        default: emulator-test.sh
 
 permissions:
   contents: write
@@ -41,7 +45,7 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: bash scripts/emulator-test.sh
+          script: bash scripts/${{ inputs.script || 'emulator-test.sh' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
