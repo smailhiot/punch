@@ -30,6 +30,7 @@ ensure_app
 adb exec-out screencap -p > out/2-reinstallee.png
 # Restauration via le sélecteur de fichiers (Android cache l'ancien fichier à la nouvelle installation)
 python3 scripts/ui_labels.py out/ecran-2.txt
+python3 scripts/ui_tap.py "^Plus tard$" || true; sleep 2
 python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true
 sleep 6
 adb exec-out screencap -p > out/3-selecteur.png
@@ -55,6 +56,7 @@ python3 scripts/cdp_eval.py "S.clients.push({id:'c',name:'Client C',rate:50}); s
 adb uninstall $PKG; adb install Punch.apk && grant
 sleep 25; adb shell am start -n $PKG/.MainActivity; sleep 20; ensure_app
 adb exec-out screencap -p > out/4-reinstallee-2.png
+python3 scripts/ui_tap.py "^Plus tard$" || true; sleep 2
 python3 scripts/ui_tap.py "^Restaurer une sauvegarde$" || true; sleep 6
 python3 scripts/ui_tap.py "Show roots"; sleep 3
 python3 scripts/ui_tap.py "sdk_gphone|Android SDK|Internal storage|^Pixel|GB free|Go libres"; sleep 3
