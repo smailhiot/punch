@@ -31,12 +31,17 @@ adb shell am start -n $PKG/.MainActivity; sleep 8
 for k in $(seq 1 6); do fix 45.5107 -73.5673; sleep 10; done
 for k in $(seq 1 30); do fix 45.5450 -73.5673; sleep 8; adb shell dumpsys notification --noredact | grep -q "quitté la zone" && break; done
 adb shell dumpsys notification --noredact | grep -iE "android.title|android.text" > out/notifs-2.txt
+sleep 20
+adb exec-out screencap -p > out/3-question-app-ouverte.png
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({sheet: sheetKind, left: S.active && S.active.leftPending})" > out/etat-app-ouverte.txt || true
+timeout 60 python3 scripts/cdp_eval.py "closeSheet(); 'ok'"
+adb shell input keyevent KEYCODE_HOME; sleep 3
 adb shell cmd statusbar expand-notifications; sleep 3
 adb exec-out screencap -p > out/2-notification.png
-adb shell cmd statusbar collapse
-timeout 60 python3 scripts/ui_tap.py "quitté la zone" || adb shell am start -n $PKG/.MainActivity
+timeout 60 python3 scripts/ui_tap.py "^(Déplacement|Travel)" || timeout 60 python3 scripts/ui_tap.py "quitté la zone" || true
 sleep 12
-adb exec-out screencap -p > out/3-question.png
+adb exec-out screencap -p > out/4-apres-deplacement.png
+timeout 60 python3 scripts/cdp_eval.py "PN.getZoneState().then(r=>JSON.stringify({native:r, travel:S.active&&S.active.travelUntil, left:S.active&&S.active.leftPending}))" > out/etat-deplacement.txt || true
 timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({active:S.active&&S.active.clientName, left:S.active&&S.active.leftPending})" > out/etat.txt || true
 timeout 60 python3 scripts/cdp_eval.py "PN.getZoneState().then(r=>JSON.stringify(r))" > out/zone-2.txt || true
 adb shell dumpsys activity service com.google.android.gms/com.google.android.location.internal.GoogleLocationManagerService 2>/dev/null | grep -iA5 "geofence" | head -60 > out/gms-geofences.txt || true

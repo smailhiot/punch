@@ -1251,6 +1251,8 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 setInterval(() => { if (current === "punch" && S.active && !sheetOpen()) renderPunch(true); }, 30000);
+/* App ouverte : vérifier ce qu'Android a détecté (lecture locale, aucun coût en batterie) */
+setInterval(() => { if (NATIVE && startedServices && S.active && !S.active.leftPending && document.visibilityState === "visible") applyZoneState(); }, 15000);
 if (!NATIVE && "serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 render();
 if (S.active && S.active.leftPending) askLeftZone();
