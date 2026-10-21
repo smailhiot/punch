@@ -151,7 +151,7 @@ function load(){
   };
 }
 let S = load();
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast("Impossible d'enregistrer : " + e.message); } syncWidget(); autoBackup(); }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast("Impossible d'enregistrer : " + e.message); } syncWidget(); autoBackup(); if (typeof syncClientFences === "function" && startedServices) syncClientFences(); }
 
 /* ============ Plateforme ============ */
 const CAP = window.Capacitor;
@@ -318,33 +318,63 @@ function startWebWatch(){
 function stopWebWatch(){ if (webWatch !== null){ navigator.geolocation.clearWatch(webWatch); webWatch = null; } }
 
 /* Natif : un seul observateur, en arrière-plan (avec notification) quand on est en service */
+/* Natif : position seulement quand l'app est à l'écran. En arrière-plan, c'est Android qui surveille
+   la zone (géorepérage), sans GPS continu : beaucoup moins de batterie. */
 async function syncNativeWatch(){
   if (!NATIVE) return;
-  let key = null, opts = null;
-  if (S.active) {
-    const c = clientById(S.active.clientId);
-    key = "active:" + S.active.id;
-    opts = { backgroundTitle: "En service : " + (c ? c.name : S.active.clientName),
-             backgroundMessage: "Depuis " + hm(S.active.start) + ". Touchez pour ouvrir.",
-             requestPermissions: true, stale: false, distanceFilter: 50 };
-  } else if (S.settings.arrival && S.clients.some(c => c.lat != null)) {
-    key = "arrival";
-    opts = { backgroundTitle: "Punch", backgroundMessage: "Détection de l'arrivée chez vos clients",
-             requestPermissions: true, stale: false, distanceFilter: 100 };
-  } else if (document.visibilityState === "visible") {
-    key = "fg";
-    opts = { requestPermissions: true, stale: false, distanceFilter: 25 };
-  }
+  const key = document.visibilityState === "visible" ? "fg" : null;
   if (key === nativeWatchKey) return;
   if (nativeWatch) { try { await BG.removeWatcher({id: nativeWatch}); } catch(e) {} nativeWatch = null; }
   nativeWatchKey = key;
   if (!key) return;
   try {
-    nativeWatch = await BG.addWatcher(opts, (loc, err) => {
+    nativeWatch = await BG.addWatcher({ requestPermissions: false, stale: false, distanceFilter: 25 }, (loc, err) => {
       if (err) return onLocError(err.code, err.message);
       if (loc) onLocation({lat: loc.latitude, lng: loc.longitude, acc: loc.accuracy, time: loc.time});
     });
   } catch(e) { nativeWatchKey = null; onLocError("error", e.message); }
+}
+
+/* ============ Zone native (géorepérage Android) ============ */
+function syncZone(){
+  if (!PN) return;
+  const a = S.active;
+  if (!a) { PN.stopZone().catch(() => {}); return; }
+  if (a.leftPending || a.travelUntil) return;   // zone déjà retirée par Android
+  if (!a.startLoc) { PN.stopZone().catch(() => {}); return; }
+  PN.startZone({ client: a.clientName, start: a.start, lat: a.startLoc.lat, lng: a.startLoc.lng,
+                 radius: S.settings.radiusKm * 1000, mode: S.settings.leaveMode }).catch(() => {});
+}
+/* Lit ce qu'Android a détecté pendant que l'app était fermée */
+async function applyZoneState(){
+  if (!PN) return;
+  let r; try { r = await PN.getZoneState(); } catch(e) { return; }
+  const a = S.active;
+  if (!a) { if (r.active) PN.stopZone().catch(() => {}); return; }
+  let changed = false;
+  if (r.recentered && r.lat) {
+    a.startLoc = { lat: +r.lat, lng: +r.lng }; a.travelUntil = null; a.lastInsideAt = r.recentered; changed = true;
+  }
+  if (r.leftTime && !a.leftPending && !a.travelUntil) {
+    a.leftPending = { at: Math.max(a.start, r.leftTime), d: S.settings.radiusKm * 1000 }; changed = true;
+  }
+  if (r.leftTime || r.recentered) PN.clearLeft().catch(() => {});
+  if (changed) save();
+  if (!r.active && !a.leftPending && !a.travelUntil) syncZone();   // ex. première ouverture après la mise à jour
+  if (a.leftPending) {
+    if (S.settings.leaveMode === "auto") { punchOut(a.leftPending.at, {auto: true}); return; }
+    if (document.visibilityState === "visible") askLeftZone();
+  }
+  if (current === "punch" && !sheetOpen()) renderPunch(true);
+}
+let lastClientsSig = null;
+function syncClientFences(){
+  if (!PN) return;
+  const list = S.clients.filter(c => c.lat != null).map(c => ({ id: c.id, name: c.name, lat: c.lat, lng: c.lng }));
+  const sig = JSON.stringify([list, S.settings.arrival, S.settings.clientRadiusM]);
+  if (sig === lastClientsSig) return;
+  lastClientsSig = sig;
+  PN.setClients({ clients: JSON.stringify(list), radius: S.settings.clientRadiusM, enabled: !!S.settings.arrival }).catch(() => {});
 }
 
 function syncWatch(){ if (NATIVE && !startedServices && !S.active) return; NATIVE ? syncNativeWatch() : (document.visibilityState === "visible" ? startWebWatch() : stopWebWatch()); }
@@ -373,6 +403,7 @@ function currentPosition(timeoutMs = 10000){
 
 /* ============ Zone 2 km ============ */
 function checkZone(){
+  if (NATIVE) return;   // sur Android, la sortie de zone est détectée par le système
   const a = S.active, L = S.lastLoc;
   if (!a || !a.startLoc || !L) return;
   // Mode déplacement : la zone suit, puis se recentre là où vous serez
@@ -418,6 +449,7 @@ function nearbyClients(){
 }
 const atHome = () => S.settings.home && S.lastLoc && locFresh(600000) && distM(S.settings.home, S.lastLoc) <= Math.max(300, S.lastLoc.acc || 0);
 function checkArrival(){
+  return;   // arrivée chez un client : détectée par Android (géorepérage)
   if (S.active || !NATIVE || !S.settings.arrival) return;
   const n = nearbyClients()[0];
   if (!n) return;
@@ -454,6 +486,7 @@ async function punchIn(clientId, opts = {}){
   toast(loc ? "Punch IN chez " + c.name + " ✓" : "Punch IN ✓ — sans position, pas de punch out automatique", 4500);
   if (navigator.vibrate) navigator.vibrate(60);
   if (NATIVE) await notifReady();   // Android 13+ : requis pour la notification « En service »
+  syncZone();
   syncWatch();
   scheduleShiftReminders();
   scheduleStartReminders();
@@ -470,6 +503,7 @@ function punchOut(end, opts = {}){
   S.active = null;
   save();
   cancelNotifs([2001, 2002, 2004]);
+  if (PN) { PN.stopZone().catch(() => {}); PN.clearLeft().catch(() => {}); }
   if (opts.switched) { save(); return e; }
   syncWatch();
   scheduleStartReminders();
@@ -734,7 +768,7 @@ function renderSettings(){
     <div class="switch" style="margin-top:8px"><span>Rappel de fin de journée si encore punché</span><input type="checkbox" id="remindEnd" ${st.remindEnd ? "checked" : ""}></div>
     <label class="f">Heure</label><input id="endTime" type="time" value="${st.endTime}">
     <label class="f">Alerte après un quart de (heures, 0 = jamais)</label><input id="maxHours" type="number" inputmode="decimal" min="0" step="0.5" value="${st.maxHours}">
-    <div class="switch" style="margin-top:8px"><span>Me proposer de puncher IN quand j'arrive chez un client<br><span class="small muted">Utilise un peu plus de batterie</span></span><input type="checkbox" id="arrival" ${st.arrival ? "checked" : ""}></div>
+    <div class="switch" style="margin-top:8px"><span>Me proposer de puncher IN quand j'arrive chez un client<br><span class="small muted">Détecté par Android, très peu de batterie</span></span><input type="checkbox" id="arrival" ${st.arrival ? "checked" : ""}></div>
     ${NATIVE ? `<button class="btn block" style="margin-top:10px" data-act="testNotif">Tester une notification</button>` : ""}
   </div>
   <button class="btn primary block" data-act="saveSettings">Enregistrer les réglages</button>
@@ -858,6 +892,7 @@ function startTravel(minutes){
   a.travelUntil = Date.now() + minutes * 60000;
   a.leftPending = null; a.outCount = 0;
   save(); cancelNotifs([2004]);
+  if (PN) PN.travel({ minutes }).catch(() => {});
   if (sheetKind === "left") closeSheet(); else render();
   toast("Déplacement : le quart continue. La zone se recentrera vers " + hm(a.travelUntil) + ".", 5000);
 }
@@ -1066,7 +1101,7 @@ const ACT = {
     st.remindEnd = chk("remindEnd"); st.endTime = val("endTime") || "18:00";
     st.maxHours = Math.max(0, parseFloat(val("maxHours").replace(",", ".")) || 0);
     st.arrival = chk("arrival");
-    save(); syncWatch(); scheduleStartReminders(); scheduleShiftReminders();
+    save(); syncWatch(); syncZone(); syncClientFences(); scheduleStartReminders(); scheduleShiftReminders();
     if (NATIVE && (st.remindStart || st.remindEnd || st.arrival)) notifReady();
     toast("Réglages enregistrés ✓");
   },
@@ -1095,11 +1130,11 @@ document.addEventListener("click", ev => {
 
 /* ============ Autorisations (Android) ============ */
 let permCache = null, startedServices = false;
-const permsOk = st => !!(st && st.location && st.notifications && st.battery);
+const permsOk = st => !!(st && st.location && st.background && st.notifications && st.battery);
 async function permStatus(){
-  const st = { location: false, notifications: false, battery: false };
+  const st = { location: false, background: false, notifications: false, battery: false };
   if (!PN) return st;
-  try { st.location = (await PN.checkPermissions()).location === "granted"; } catch(e) {}
+  try { const p = await PN.checkPermissions(); st.location = p.location === "granted"; st.background = p.background === "granted"; } catch(e) {}
   try { st.notifications = (await LN.checkPermissions()).display === "granted"; } catch(e) {}
   try { st.battery = !!(await PN.batteryStatus()).unrestricted; } catch(e) {}
   return st;
@@ -1110,7 +1145,8 @@ async function openPerms(){
   openSheet(`<h3>${permsOk(st) ? "Tout est prêt ✓" : "Configuration de Punch"}</h3>
     <div class="muted">${permsOk(st) ? "Toutes les autorisations sont accordées." : "Touchez « Tout autoriser », puis « Autoriser » dans chaque fenêtre d'Android."}</div>
     <div class="card" style="margin-top:12px;padding:2px 14px">
-      ${row(st.location, "Position", "Détecter vos clients et la zone de 2 km")}
+      ${row(st.location, "Position", "Détecter vos clients au punch IN")}
+      ${row(st.background, "Position : « Toujours autoriser »", "Android surveille la zone de 2 km, app fermée")}
       ${row(st.notifications, "Notifications", "Rappels et « En service »")}
       ${row(st.battery, "Batterie non restreinte", "Garder la détection active écran éteint")}
     </div>
@@ -1126,12 +1162,18 @@ async function requestAllPerms(){
   let st = await permStatus();
   if (!st.location) { try { await PN.requestPermissions({ permissions: ["location"] }); } catch(e) {} }
   if (!st.notifications) await notifReady();
+  st = await permStatus();
+  if (st.location && !st.background) {   // Android ouvre la page : choisir « Toujours autoriser »
+    toast("Choisissez « Toujours autoriser », puis revenez", 6000);
+    try { await PN.requestPermissions({ permissions: ["background"] }); } catch(e) {}
+  }
   st = permCache = await permStatus();
   afterPerms();
   if (!st.battery) { try { await PN.requestBattery(); } catch(e) {} }   // la fiche se rafraîchit au retour
 }
 function afterPerms(){
-  if (!startedServices) { startedServices = true; syncWatch(); currentPosition(); initNotifications(); }
+  if (!startedServices) { startedServices = true; syncWatch(); currentPosition(); initNotifications(); applyZoneState(); syncClientFences(); }
+  else { syncZone(); lastClientsSig = null; syncClientFences(); }
   if (sheetKind === "perms") openPerms(); else if (current === "punch" && !sheetOpen()) renderPunch(true);
 }
 
@@ -1158,6 +1200,15 @@ function syncWidget(){
 async function handleWidgetAction(a){
   if (!a || !a.op) return;
   if (current !== "punch") go("punch");
+  if (a.op.startsWith("left")) {
+    await applyZoneState();
+    const act = S.active;
+    if (!act) return;
+    if (a.op === "leftOut") { punchOut(act.leftPending ? act.leftPending.at : Date.now()); return; }
+    if (a.op === "leftTravel") { startTravel(60); return; }
+    if (act.leftPending) askLeftZone();
+    return;
+  }
   if (a.op === "in") {
     if (S.active) return toast("Déjà en service chez " + S.active.clientName);
     if (!S.clients.length) return toast("Ajoutez d'abord un client");
@@ -1184,6 +1235,7 @@ document.addEventListener("visibilitychange", () => {
     if (startedServices || !NATIVE) currentPosition();
     render();
     if (S.active && S.active.leftPending) askLeftZone();
+    if (NATIVE && startedServices) applyZoneState();
     if (NATIVE) permStatus().then(st => { permCache = st; if (sheetKind === "perms") openPerms(); else if (current === "punch" && !sheetOpen()) renderPunch(true); });
   }
 });

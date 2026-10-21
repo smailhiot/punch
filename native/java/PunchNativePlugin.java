@@ -20,7 +20,8 @@ import com.getcapacitor.annotation.Permission;
 @CapacitorPlugin(
     name = "PunchNative",
     permissions = {
-        @Permission(alias = "location", strings = { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION })
+        @Permission(alias = "location", strings = { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION }),
+        @Permission(alias = "background", strings = { Manifest.permission.ACCESS_BACKGROUND_LOCATION })
     }
 )
 public class PunchNativePlugin extends Plugin {
@@ -99,6 +100,54 @@ public class PunchNativePlugin extends Plugin {
         String data = call.getString("data", "{}");
         getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("state", data).apply();
         PunchWidget.refreshAll(getContext());
+        call.resolve();
+    }
+
+    // ---------- Zone (géorepérage Android, économe en batterie) ----------
+
+    @PluginMethod
+    public void startZone(PluginCall call) {
+        PunchZone.start(getContext(), call.getString("client", ""), call.getLong("start", System.currentTimeMillis()),
+            call.getDouble("lat", 0.0), call.getDouble("lng", 0.0), call.getFloat("radius", 2000f), call.getString("mode", "ask"));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void stopZone(PluginCall call) {
+        PunchZone.stop(getContext());
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void travel(PluginCall call) {
+        PunchZone.travel(getContext(), call.getInt("minutes", 60));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getZoneState(PluginCall call) {
+        android.content.SharedPreferences p = PunchZone.prefs(getContext());
+        JSObject r = new JSObject();
+        r.put("active", p.getBoolean("active", false));
+        r.put("leftTime", p.getLong("leftTime", 0));
+        r.put("travelUntil", p.getLong("travelUntil", 0));
+        r.put("recentered", p.getLong("recentered", 0));
+        r.put("lat", p.getString("lat", null));
+        r.put("lng", p.getString("lng", null));
+        r.put("error", p.getString("zoneError", ""));
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void clearLeft(PluginCall call) {
+        PunchZone.prefs(getContext()).edit().remove("leftTime").remove("recentered").apply();
+        PunchZone.cancel(getContext(), PunchZone.NOTIF_LEFT);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setClients(PluginCall call) {
+        PunchZone.setClients(getContext(), call.getString("clients", "[]"), call.getFloat("radius", 300f), call.getBoolean("enabled", false));
         call.resolve();
     }
 

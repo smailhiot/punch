@@ -24,15 +24,26 @@ for sub in ("layout", "xml", "drawable"):
 # 3. Manifeste : autorisation batterie + récepteur du widget
 manifest = app / "AndroidManifest.xml"
 m = manifest.read_text()
-perm = '<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />'
-if perm not in m:
-    m = m.replace("</manifest>", f"    {perm}\n</manifest>")
+for name in ("REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", "ACCESS_BACKGROUND_LOCATION", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "RECEIVE_BOOT_COMPLETED", "POST_NOTIFICATIONS"):
+    perm = f'<uses-permission android:name="android.permission.{name}" />'
+    if perm not in m:
+        m = m.replace("</manifest>", f"    {perm}\n</manifest>")
 receiver = """
         <receiver android:name=".PunchWidget" android:exported="false" android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/punch_widget_info" />
+        </receiver>
+"""
+receiver += """
+        <receiver android:name=".GeofenceReceiver" android:exported="false" />
+        <receiver android:name=".TravelReceiver" android:exported="false" />
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 """
 if "PunchWidget" not in m:
@@ -69,6 +80,9 @@ if "signingConfigs" not in g:
         debug {{
             signingConfig signingConfigs.punch
         }}""", 1)
+# Géorepérage (Google Play services)
+if "play-services-location" not in g:
+    g = g.replace("dependencies {", 'dependencies {\n    implementation "com.google.android.gms:play-services-location:21.3.0"', 1)
 # Numéro de version qui augmente à chaque construction
 run = os.environ.get("GITHUB_RUN_NUMBER")
 if run:
