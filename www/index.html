@@ -349,6 +349,7 @@ function syncZone(){
 async function applyZoneState(){
   if (!PN) return;
   let r; try { r = await PN.getZoneState(); } catch(e) { return; }
+  zoneError = r.active ? (r.error || "") : "";
   const a = S.active;
   if (!a) { if (r.active) PN.stopZone().catch(() => {}); return; }
   let changed = false;
@@ -367,7 +368,13 @@ async function applyZoneState(){
   }
   if (current === "punch" && !sheetOpen()) renderPunch(true);
 }
-let lastClientsSig = null;
+let lastClientsSig = null, zoneError = "";
+function zoneErrorText(){
+  if (!zoneError) return "";
+  if (/1004|permission/i.test(zoneError)) return "Android n'a pas l'autorisation « Position : toujours autoriser ».";
+  if (/1000|not.?available/i.test(zoneError)) return "Activez <b>Paramètres › Localisation › Services de localisation › Précision de la localisation Google</b>.";
+  return "Erreur Android : " + esc(zoneError);
+}
 function syncClientFences(){
   if (!PN) return;
   const list = S.clients.filter(c => c.lat != null).map(c => ({ id: c.id, name: c.name, lat: c.lat, lng: c.lng }));
@@ -487,6 +494,7 @@ async function punchIn(clientId, opts = {}){
   if (navigator.vibrate) navigator.vibrate(60);
   if (NATIVE) await notifReady();   // Android 13+ : requis pour la notification « En service »
   syncZone();
+  setTimeout(applyZoneState, 4000);
   syncWatch();
   scheduleShiftReminders();
   scheduleStartReminders();
@@ -625,6 +633,8 @@ function banners(){
     <div class="row"><button class="btn primary" data-act="perms">Configurer</button></div></div>`;
   if (!NATIVE && !S.seenIntro) h += `<div class="banner ok">Version web : le punch out automatique et les rappels fonctionnent seulement quand l'app est ouverte. L'app Android les fait aussi en arrière-plan.
     <div class="row"><button class="btn" data-act="hideIntro">Compris</button></div></div>`;
+  if (NATIVE && S.active && zoneError) h += `<div class="banner"><b>La zone de ${S.settings.radiusKm} km n'est pas surveillée.</b> ${zoneErrorText()}
+    <div class="row"><button class="btn primary" data-act="perms">Vérifier</button><button class="btn" data-act="retryZone">Réessayer</button></div></div>`;
   if (S.active && !S.active.startLoc) h += `<div class="banner"><b>Sans position</b> : pas de punch out automatique pour ce quart. Pensez à puncher OUT.</div>`;
   return h;
 }
@@ -1076,6 +1086,7 @@ const ACT = {
   },
   editActiveStart: () => openActiveStart(),
   pickDate: id => pickDate(id),
+  retryZone: () => { zoneError = ""; syncZone(); setTimeout(applyZoneState, 3000); toast("Nouvel essai…"); },
   restoreAuto: () => { const d = pendingAutoBackup; pendingAutoBackup = null; closeSheet(); if (d) applyBackup(d, false); },
   saveActiveStart: () => {
     const t = fromDateTime(val("eStartD"), val("eStartT"));
