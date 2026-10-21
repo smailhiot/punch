@@ -25,9 +25,11 @@ adb shell input keyevent KEYCODE_HOME; sleep 10
 adb shell dumpsys location > out/location-arriere-plan.txt
 adb shell dumpsys activity services $PKG > out/services-arriere-plan.txt
 adb shell dumpsys notification --noredact | grep -iE "En service|quitté|android.title|android.text" > out/notifs-1.txt
+# Ramener l'app au premier plan : l'émulateur ne fournit des positions au géorepérage que si une app en demande
+adb shell am start -n $PKG/.MainActivity; sleep 8
 # Quitter la zone : 1 km, puis 3 km, puis 5 km (fixes réguliers pendant ~4 min)
 for k in $(seq 1 6); do fix 45.5107 -73.5673; sleep 10; done
-for k in $(seq 1 30); do fix 45.5450 -73.5673; sleep 8; done
+for k in $(seq 1 30); do fix 45.5450 -73.5673; sleep 8; adb shell dumpsys notification --noredact | grep -q "quitté la zone" && break; done
 adb shell dumpsys notification --noredact | grep -iE "android.title|android.text" > out/notifs-2.txt
 adb shell cmd statusbar expand-notifications; sleep 3
 adb exec-out screencap -p > out/2-notification.png
