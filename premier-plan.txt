@@ -1,0 +1,2 @@
+    topResumedActivity=ActivityRecord{c11b4ec u0 ca.punch.heures/.MainActivity t8}
+    topResumedActivity=ActivityRecord{c11b4ec u0 ca.punch.heures/.MainActivity t8}

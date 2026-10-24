@@ -1,0 +1,150 @@
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{7849174 com.google.android.partnersetup/10124} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{b7b769d com.google.android.apps.wallpaper.nexus/10143} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{c238712 com.google.android.apps.nexuslauncher/10169} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{8342ee3 com.google.android.nearby.halfsheet/10191} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{b1350e0 com.android.theme.font.notoserifsource/10066} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{71ddf99 com.google.android.safetycenter.resources/10181} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{b2f025e com.android.internal.display.cutout.emulation.waterfall/10040} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{870d63f com.android.internal.systemui.navbar.transparent/10029} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{d0c9b0c com.google.android.connectivity.resources/10190} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{ce3dc55 com.android.providers.contacts.auto_generated_rro_product__/10019} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{8e4e66a com.google.android.feedback/10164} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{7a6975b com.google.android.printservice.recommendation/10110} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{f6e5bf8 com.google.android.apps.photos/10142} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{3b213aa com.google.android.calendar/10144} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{bd2e8d1 com.google.android.documentsui/10098} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{e62ff36 com.android.systemui.emulation.pixel_3a_xl/10021} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{3ad4e37 com.android.systemui.emulation.pixel_6_pro/10063} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{4293fa4 com.android.systemui.emulation.pixel_7_pro/10054} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{3cc410d com.android.systemui.emulation.pixel_8_pro/10001} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{6d7d8c2 com.google.mainline.telemetry/10151} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{5fe96d3 com.android.carrierconfig.auto_generated_rro_product__/10064} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{98cb210 com.android.providers.partnerbookmarks/10100} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{788e109 com.android.wallpaper.livepicker/10089} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{fcebf0e com.android.providers.telephony.auto_generated_rro_product__/10062} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{c11cd2f com.android.phone.auto_generated_rro_vendor__/10081} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{172df3c com.google.mainline.adservices/10136} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{25584c5 com.android.imsserviceentitlement/10117} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{23bbe1a com.google.android.healthconnect.controller/10185} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{9780d4b com.android.internal.emulation.pixel_2_xl/10016} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{f2cb328 com.android.internal.emulation.pixel_3_xl/10056} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{d8ea841 com.android.internal.emulation.pixel_4_xl/10047} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{47a1e6 com.android.internal.emulation.pixel_fold/10006} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{fb83327 com.android.bookmarkprovider/10114} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{82dd9d4 com.google.android.overlay.pixelconfigcommon/10014} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{1dc877d com.android.systemui.accessibility.accessibilitymenu.auto_generated_rro_product__/10050} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{3dbf672 com.android.systemui.emulation.pixel_3a/10013} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{7eadac3 com.android.systemui.emulation.pixel_4a/10000} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{378bf40 com.android.systemui.emulation.pixel_6a/10042} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{2f1e79 com.android.systemui.emulation.pixel_7a/10017} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{9ef07be com.google.android.settings.intelligence/10118} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{fcaf0a com.google.android.projection.gearhead/10123} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{a16601f com.google.android.uwb.resources/10176} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{4a7c37b com.android.cts.ctsshim/10174} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{3ca8f6c com.google.android.wifi.resources/10170} BLOCKED
+10-24 09:41:14.617   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{e7a2935 com.google.android.wifi.dialog/10172} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{68fe1ca com.google.android.apps.wallpaper/10161} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{e4adf3b com.google.android.odad/10121} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{8873658 com.android.settings.auto_generated_rro_product__/10028} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{43123b1 com.android.internal.systemui.navbar.gestural/10051} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{db25096 com.google.android.apps.youtube.music/10155} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{37e3417 com.android.bluetoothmidiservice/10106} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{1656004 com.android.storagemanager.auto_generated_rro_product__/10026} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{28349ed com.google.android.cellbroadcastreceiver/10184} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{cbae022 com.android.phone.auto_generated_rro_product__/10061} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{827fab3 android.auto_generated_rro_product__/10069} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{da7870 com.android.internal.systemui.navbar.gestural_narrow_back/10052} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{45797e9 com.google.android.inputmethod.latin/10140} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{cadc6e android.auto_generated_rro_vendor__/10075} BLOCKED
+10-24 09:41:14.618   520   903 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{9d8f0f com.google.android.apps.restore/10120} BLOCKED
+10-24 09:41:14.656  3271  3271 W ca.punch.heures: Accessing hidden method Landroid/os/Trace;->isTagEnabled(J)Z (unsupported, reflection, allowed)
+10-24 09:41:14.660  3271  3271 W ca.punch.heures: Accessing hidden method Landroid/os/Trace;->traceBegin(JLjava/lang/String;)V (unsupported, reflection, allowed)
+10-24 09:41:14.660  3271  3271 W ca.punch.heures: Accessing hidden method Landroid/os/Trace;->traceEnd(J)V (unsupported, reflection, allowed)
+10-24 09:41:14.660  3271  3271 W ca.punch.heures: Accessing hidden method Landroid/os/Trace;->asyncTraceBegin(JLjava/lang/String;I)V (unsupported, reflection, allowed)
+10-24 09:41:14.660  3271  3271 W ca.punch.heures: Accessing hidden method Landroid/os/Trace;->asyncTraceEnd(JLjava/lang/String;I)V (unsupported, reflection, allowed)
+10-24 09:41:14.741  3271  3423 I cr_VariationsUtils: Failed reading seed file "/data/user/0/ca.punch.heures/app_webview/variations_seed_new"
+10-24 09:41:14.741  3271  3423 I cr_VariationsUtils: Failed reading seed file "/data/user/0/ca.punch.heures/app_webview/variations_seed"
+10-24 09:41:15.083  3271  3436 W chromium: [WARNING:dns_config_service_android.cc(115)] Failed to read DnsConfig.
+10-24 09:41:15.187   520   893 I ActivityManager: Start proc 3437:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0ai9000 for  {ca.punch.heures/org.chromium.content.app.SandboxedProcessService0:0}
+10-24 09:41:15.309  3437  3437 I cr_WebViewApkApp: Launched version=113.0.5672.136 minSdkVersion=29 isBundle=false processName=com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+10-24 09:41:15.624  1048  1048 D CarrierSvcBindHelper: onPackageAdded: ca.punch.heures
+10-24 09:41:15.666   520   550 I ActivityManager: Start proc 3500:com.google.android.webview:webview_apk/u0a134 for service {com.google.android.webview/org.chromium.android_webview.nonembedded.AwComponentUpdateService}
+10-24 09:41:16.304  1048  1342 D ImsResolver: maybeAddedImsService, packageName: ca.punch.heures
+10-24 09:41:16.316  1048  1048 D CarrierSvcBindHelper: onPackageModified: ca.punch.heures
+10-24 09:41:16.360  1048  1342 D ImsResolver: maybeAddedImsService, packageName: ca.punch.heures
+10-24 09:41:16.446   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{851d831 com.google.android.youtube/10139} BLOCKED
+10-24 09:41:16.446   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{392fe84 com.google.android.googlequicksearchbox/10132} BLOCKED
+10-24 09:41:16.446   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{8c4567c com.google.android.gm/10141} BLOCKED
+10-24 09:41:16.446   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{b431b0a com.google.android.dialer/10128} BLOCKED
+10-24 09:41:16.446   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{424c2dc com.google.android.contacts/10156} BLOCKED
+10-24 09:41:16.446   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{db25096 com.google.android.apps.youtube.music/10155} BLOCKED
+10-24 09:41:16.903   520  2385 D CoreBackPreview: Window{3aae1df u0 ca.punch.heures/ca.punch.heures.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@501128d, mPriority=0, mIsAnimationCallback=false}
+10-24 09:41:16.947  3500  3580 W cr_AWNetworkFetcherTask: 	at org.chromium.android_webview.nonembedded.NetworkFetcherTask.download(chromium-TrichromeWebViewGoogle6432.apk-stable-567263637:48)
+10-24 09:41:17.739   520  1794 W InputManager-JNI: Input channel object 'b28b76 Splash Screen ca.punch.heures (client)' was disposed without first being removed with the input manager!
+10-24 09:41:17.839   520   537 W ziparchive: Unable to open '/data/app/~~Mqv6iHr0Vw5L8JgAD4WRqg==/ca.punch.heures-W91s1JU-H9CWV3wASHT9Bg==/base.dm': No such file or directory
+10-24 09:41:17.840   520   537 I ActivityTaskManager: Displayed ca.punch.heures/.MainActivity for user 0: +4s377ms
+10-24 09:41:18.411   520  2606 I ImeTracker: ca.punch.heures:942317e0: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+10-24 09:41:18.411   520  2606 I ImeTracker: ca.punch.heures:942317e0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-24 09:41:18.422  1485  1485 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x12000000 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=ca.punch.heures fieldId=0 fieldName=null extras=null}, false)
+10-24 09:41:18.703  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:20.488   520  2615 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{896d96a com.google.android.settings.intelligence/10118} BLOCKED
+10-24 09:41:20.497   520   533 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{750e5b com.google.android.settings.intelligence/10118} BLOCKED
+10-24 09:41:22.226  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:22.288  3271  3828 D ProfileInstaller: Installing profile for ca.punch.heures
+10-24 09:41:23.510  1591  1591 I AiAiEcho: AppFetcherImplV2 updateApps package:[ca.punch.heures], userId:[0], reason:[package is added.].
+10-24 09:41:23.844  1591  1591 I AiAiEcho: AppFetcherImpl onPackageChanged ca.punch.heures.
+10-24 09:41:23.866  1591  3341 I AiAiEcho: AppIndexer Package:[ca.punch.heures] UserProfile:[0] Enabled:[true].
+10-24 09:41:23.867  1591  3341 I AiAiEcho: AppFetcherImplV2 updateApps package:[ca.punch.heures], userId:[0], reason:[package is updated.].
+10-24 09:41:24.982   520   593 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{22b277f com.google.android.gm/10141} BLOCKED
+10-24 09:41:28.282   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{485ace2 com.google.android.googlequicksearchbox/10132} BLOCKED
+10-24 09:41:28.282   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{63a873 com.android.camera2/10145} BLOCKED
+10-24 09:41:28.282   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{3b3f330 com.google.android.gm/10141} BLOCKED
+10-24 09:41:28.283   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{ed75ba9 com.google.android.devicelockcontroller/10183} BLOCKED
+10-24 09:41:28.283   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{d55b52e com.google.android.rkpdapp/10175} BLOCKED
+10-24 09:41:28.283   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{a4658cf com.google.android.settings.intelligence/10118} BLOCKED
+10-24 09:41:28.283   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{f664c87 com.google.android.projection.gearhead/10123} BLOCKED
+10-24 09:41:30.308  1430  4202 I BlockstoreStorage: Clearing Blockstore Data for package ca.punch.heures [CONTEXT service_id=258 ]
+10-24 09:41:34.491  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:34.510  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:34.511  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:34.553  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:38.622  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:38.896   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{2816216 com.google.android.youtube/10139} BLOCKED
+10-24 09:41:38.896   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{ffda797 com.google.android.apps.messaging/10130} BLOCKED
+10-24 09:41:38.896   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{dda8d84 com.google.android.as/10125} BLOCKED
+10-24 09:41:38.896   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{544a96d com.google.android.gm/10141} BLOCKED
+10-24 09:41:38.896   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{9fa967f com.google.android.apps.maps/10154} BLOCKED
+10-24 09:41:38.975  3271  3271 I Capacitor/Console: File:  - Line 333 - Msg: undefined
+10-24 09:41:47.286  4849  4849 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-24 09:41:47.317  4849  4849 I AndroidRuntime: Using default boot image
+10-24 09:41:47.317  4849  4849 I AndroidRuntime: Leaving lock profiling enabled
+10-24 09:41:47.524  4849  4849 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-24 09:41:47.710  4849  4849 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-24 09:41:49.133  4849  4849 D AndroidRuntime: Shutting down VM
+10-24 09:41:49.702   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{1d07914 com.google.android.googlequicksearchbox/10132} BLOCKED
+10-24 09:41:49.703   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{41fd5bd com.google.android.apps.messaging/10130} BLOCKED
+10-24 09:41:49.703   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{1dbc7b2 com.google.android.contacts/10156} BLOCKED
+10-24 09:41:50.058  3271  3271 W ca.punch.heures: Accessing hidden method Landroid/view/MotionEvent;->getEventTimeNano()J (unsupported, reflection, allowed)
+10-24 09:41:50.795   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{deb4027 com.google.android.contacts/10156} BLOCKED
+10-24 09:41:52.624  4337  5011 I cr_CronetUrlRequestContext: destroyNativeStreamLocked org.chromium.net.impl.CronetBidirectionalStream@3501fa4
+10-24 09:41:53.533  5056  5056 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-24 09:41:53.563  5056  5056 I AndroidRuntime: Using default boot image
+10-24 09:41:53.563  5056  5056 I AndroidRuntime: Leaving lock profiling enabled
+10-24 09:41:54.098  5056  5056 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-24 09:41:54.301  5056  5056 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-24 09:41:55.606  5056  5056 D AndroidRuntime: Shutting down VM
+10-24 09:41:56.238   520   594 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{9181078 com.google.android.settings.intelligence/10118} BLOCKED
+10-24 09:41:58.509   520   573 I AppsFilter: interaction: PackageSetting{d125fbb ca.punch.heures/10192} -> PackageSetting{8215923 com.google.android.as/10125} BLOCKED
+10-24 09:42:03.715   831   862 V WindowManagerShell: Transition requested: android.os.BinderProxy@9f540ea TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=ca.punch.heures/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{ca.punch.heures/ca.punch.heures.MainActivity} numActivities=0 lastActiveTime=49611 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@6301fdb} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-24 09:42:04.000   520   537 V WindowManager: Sent Transition #7 createdAt=10-24 09:42:03.714 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=ca.punch.heures/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{ca.punch.heures/ca.punch.heures.MainActivity} numActivities=0 lastActiveTime=49611 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{e7822f8 Task{33220b5 #8 type=standard A=10192:ca.punch.heures}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-24 09:42:04.001   520   537 V WindowManager:     info={id=7 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{9285910 Task{f475058 #1 type=home}}} m=TO_FRONT f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x6110787 sb=Rect(0, 0 - 320, 640) eb=Rect(0, 0 - 320, 640) d=0},{WCT{RemoteToken{e7822f8 Task{33220b5 #8 type=standard A=10192:ca.punch.heures}}} m=CLOSE f=NONE leash=Surface(name=Task=8)/@0x7980874 sb=Rect(0, 0 - 320, 640) eb=Rect(0, 0 - 320, 640) d=0},{null m=TO_FRONT f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{99d5acb token=android.os.Binder@9b542af})/@0x85eddf7 sb=Rect(0, 0 - 320, 640) eb=Rect(0, 0 - 320, 640) d=0}]}
+10-24 09:42:04.233   520  2127 D CoreBackPreview: Window{3aae1df u0 ca.punch.heures/ca.punch.heures.MainActivity}: Setting back callback null
+10-24 09:42:04.234   520  2610 W InputManager-JNI: Input channel object '3aae1df ca.punch.heures/ca.punch.heures.MainActivity (client)' was disposed without first being removed with the input manager!
+10-24 09:42:04.237  3271  3271 I chromium: [INFO:CONSOLE(348)] "%cnative %cBackgroundGeolocation.removeWatcher (#33122940) font-weight: lighter; color: gray font-weight: bold; color: #000", source:  (348)
+10-24 09:42:04.237  3271  3271 I chromium: [INFO:CONSOLE(349)] "[object Object]", source:  (349)
+10-24 09:42:04.237  3271  3271 I chromium: [INFO:CONSOLE(350)] "console.groupEnd", source:  (350)
+10-24 09:42:04.302  3271  3271 W cr_AwContents: 	at org.chromium.android_webview.AwContents.m(chromium-TrichromeWebViewGoogle6432.apk-stable-567263637:10)
+10-24 09:42:04.302  3271  3271 W cr_AwContents: 	at org.chromium.android_webview.AwContents.h(chromium-TrichromeWebViewGoogle6432.apk-stable-567263637:2)
+10-24 09:42:04.302  3271  3271 W cr_AwContents: 	at com.android.webview.chromium.WebViewChromium.evaluateJavaScript(chromium-TrichromeWebViewGoogle6432.apk-stable-567263637:37)
+10-24 09:42:04.389   520  2127 W ActivityManager: Exception when unbinding service ca.punch.heures/org.chromium.content.app.SandboxedProcessService0:0
+10-24 09:42:04.389   520  2127 I ActivityManager: Killing 3437:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a192i0 (adj 905): isolated not needed
