@@ -22,9 +22,9 @@ adb exec-out screencap -p > out/2-apres-retour.png
 timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({sheet: sheetOpen(), start: new Date(S.entries[0].start).getHours()})" > out/retour-fiche.txt
 adb shell dumpsys activity activities | grep -E "(mResumedActivity|topResumedActivity)" > out/premier-plan.txt
 # Appui long puis retour
-timeout 60 python3 scripts/ui_tap.py "^Client A$" || true
-adb shell input swipe 300 700 300 700 900; sleep 2
-timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({sel: selMode})" > out/selection-avant.txt
+LONG=1 timeout 60 python3 scripts/ui_tap.py "08:00.12:00" || true; sleep 2
+timeout 60 python3 scripts/ui_tap.py "08:00.10:00" || true; sleep 2
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({sel: selMode, ids: [...selIds], sheet: sheetOpen()})" > out/selection-avant.txt
 adb exec-out screencap -p > out/3-selection.png
 adb shell input keyevent KEYCODE_BACK; sleep 2
 timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({sel: selMode, tab: current})" > out/selection-apres.txt
