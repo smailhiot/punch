@@ -106,6 +106,23 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
 .toast{position:fixed;left:16px;right:16px;top:calc(12px + env(safe-area-inset-top));z-index:30;background:var(--ink);color:var(--bg);padding:13px 16px;border-radius:12px;font-size:14px;text-align:center;max-width:528px;margin:0 auto}
 .empty{text-align:center;padding:30px 10px;color:var(--muted)}
 .hidden{display:none!important}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sheet-head h3{margin:0}
+.icon-btn{width:48px;height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--out);flex:0 0 auto}
+.icon-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.entry{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.entry.sel{background:color-mix(in srgb,var(--brand) 14%,transparent)}
+.entry .check{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--brand-ink)}
+.entry.sel .check{background:var(--brand);border-color:var(--brand)}
+.selbar{position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));z-index:7;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.08);padding:10px 16px}
+.selbar .top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;margin-bottom:8px;font-size:15px}
+.selbar .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.selbar .btn{min-height:44px}
+body.selecting{padding-bottom:calc(200px + env(safe-area-inset-bottom))}
+.summary{display:flex;justify-content:space-around;text-align:center}
+.summary b{display:block;font-size:18px}
+.unbilled{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
+.unbilled .grow{flex:1}
 </style>
 </head>
 <body>
@@ -685,12 +702,21 @@ function renderPunch(soft){
         <span class="meta" style="display:block">${money(c.rate)}/h${c.address ? " · " + esc(c.address) : ""}</span></span>
       </button>`).join("") + `</div>`;
   }
+  const ubId = a ? a.clientId : selectedClientId;
+  const ubName = a ? a.clientName : ((clientById(ubId) || {}).name || "");
+  if (ubId) {
+    const ub = unbilledFor(ubId);
+    h += `<h2>Non facturé · ${esc(ubName)}</h2><button class="card unbilled" data-act="showUnbilled" data-id="${esc(ubId)}">
+      <span class="grow"><b style="font-size:20px">${dur(ub.hrs*3600000)}</b> <span class="muted">· ${money(ub.amt)}</span><br>
+      <span class="small muted">${ub.n} entrée${ub.n > 1 ? "s" : ""} non facturée${ub.n > 1 ? "s" : ""}${a ? " (sans le quart en cours)" : ""}</span></span><span class="muted">›</span></button>`;
+  }
   h += `<h2>Aujourd'hui</h2><div class="card today"><div><b>${dur(hrs*3600000)}</b><span class="small muted">heures</span></div><div><b>${money(amt)}</b><span class="small muted">montant</span></div><div><b>${todays.length + (a ? 1 : 0)}</b><span class="small muted">punch</span></div></div>`;
   $("#view").innerHTML = h;
 }
 
 /* ---- Historique ---- */
-let histFilter = "all", histPeriod = "month";
+let histFilter = "all", histPeriod = "month", histClient = "all";
+let selMode = false, selIds = new Set();
 function periodRange(){
   const now = new Date();
   if (histPeriod === "month") return [new Date(now.getFullYear(), now.getMonth(), 1).getTime(), Infinity];
@@ -700,22 +726,37 @@ function periodRange(){
 }
 function filteredEntries(){
   const [a, b] = periodRange();
-  return S.entries.filter(e => e.start >= a && e.start < b).filter(e =>
+  return S.entries.filter(e => e.start >= a && e.start < b).filter(e => histClient === "all" || e.clientId === histClient).filter(e =>
     histFilter === "all" ? true : histFilter === "tobill" ? !e.billed : histFilter === "unpaid" ? (e.billed && !e.paid) : e.paid
   ).sort((x,y) => y.start - x.start);
+}
+function unbilledFor(clientId){
+  const l = S.entries.filter(e => e.clientId === clientId && !e.billed);
+  return { n: l.length, hrs: l.reduce((x,e) => x + hoursOf(e), 0), amt: l.reduce((x,e) => x + totalOf(e), 0) };
 }
 function renderHistory(){
   $("#title").textContent = "Historique"; $("#hdr").textContent = "";
   const list = filteredEntries();
-  let h = `<div class="chips">${[["week","Semaine"],["month","Ce mois"],["last","Mois dernier"],["allp","Tout"]].map(([k,l]) => `<button class="chip ${histPeriod === (k === "allp" ? "all" : k) ? "on" : ""}" data-act="period" data-id="${k === "allp" ? "all" : k}">${l}</button>`).join("")}</div>
+  if (histClient !== "all" && !clientById(histClient) && !S.entries.some(e => e.clientId === histClient)) histClient = "all";
+  const known = new Map(S.clients.map(c => [c.id, c.name]));
+  S.entries.forEach(e => { if (!known.has(e.clientId)) known.set(e.clientId, e.clientName + " (supprimé)"); });
+  const opts = [...known].sort((x,y) => x[1].localeCompare(y[1], "fr")).map(([id,n]) => `<option value="${esc(id)}" ${histClient === id ? "selected" : ""}>${esc(n)}</option>`).join("");
+  let h = `<select id="histClient" style="margin:0 0 8px"><option value="all">Tous les clients</option>${opts}</select>
+    <div class="chips">${[["week","Semaine"],["month","Ce mois"],["last","Mois dernier"],["allp","Tout"]].map(([k,l]) => `<button class="chip ${histPeriod === (k === "allp" ? "all" : k) ? "on" : ""}" data-act="period" data-id="${k === "allp" ? "all" : k}">${l}</button>`).join("")}</div>
     <div class="chips">${[["all","Toutes"],["tobill","À facturer"],["unpaid","Facturé, non payé"],["paid","Payé"]].map(([k,l]) => `<button class="chip ${histFilter === k ? "on" : ""}" data-act="filter" data-id="${k}">${l}</button>`).join("")}</div>`;
-  if (!list.length) h += `<div class="card empty">Aucune entrée pour cette sélection.</div>`;
+  if (list.length) {
+    const tot = list.reduce((x,e) => x + totalOf(e), 0), hrs = list.reduce((x,e) => x + hoursOf(e), 0);
+    h += `<div class="card summary"><div><b>${dur(hrs*3600000)}</b><span class="small muted">heures</span></div><div><b>${money(tot)}</b><span class="small muted">montant</span></div><div><b>${list.length}</b><span class="small muted">entrées</span></div></div>`;
+    if (!selMode) h += `<div class="small muted" style="margin:-4px 4px 4px">Appui long sur une entrée pour en sélectionner plusieurs.</div>`;
+  } else h += `<div class="card empty">Aucune entrée pour cette sélection.</div>`;
   let lastDay = null, group = [];
   const flush = () => {
     if (!group.length) return;
-    const tot = group.reduce((s,e) => s + totalOf(e), 0), hrs = group.reduce((s,e) => s + hoursOf(e), 0);
+    const tot = group.reduce((x,e) => x + totalOf(e), 0), hrs = group.reduce((x,e) => x + hoursOf(e), 0);
     h += `<div class="day"><span>${esc(dayLabel(group[0].start))}</span><span>${dur(hrs*3600000)} · ${money(tot)}</span></div><div class="card list">` +
-      group.map(e => `<div class="entry"><button class="grow" style="text-align:left" data-act="openEntry" data-id="${e.id}">
+      group.map(e => `<div class="entry ${selIds.has(e.id) ? "sel" : ""}" data-entry="${e.id}">
+        ${selMode ? `<span class="check">${selIds.has(e.id) ? "✓" : ""}</span>` : ""}
+        <button class="grow" style="text-align:left" data-act="openEntry" data-id="${e.id}">
           <div class="t">${esc(e.clientName)}${e.auto ? ` <span class="badge">auto</span>` : ""}</div>
           <div class="d">${hm(e.start)}–${hm(e.end)} · ${dur(e.end - e.start)}${e.material ? " · mat. " + money(e.material) : ""}${e.desc ? " · " + esc(e.desc) : ""}</div></button>
         <div><div class="amt">${money(totalOf(e))}</div><div class="flags">
@@ -725,22 +766,76 @@ function renderHistory(){
   };
   for (const e of list) { const d = ymd(e.start); if (d !== lastDay) { flush(); lastDay = d; } group.push(e); }
   flush();
-  if (list.length) {
-    const tot = list.reduce((s,e) => s + totalOf(e), 0), hrs = list.reduce((s,e) => s + hoursOf(e), 0);
-    h += `<div class="totals"><span>Total (${list.length})</span><span>${dur(hrs*3600000)} · ${money(tot)}</span></div>`;
-    if (histFilter === "tobill") h += `<button class="btn block" data-act="billAll">Tout marquer « facturé »</button><div style="height:8px"></div>`;
-    if (histFilter === "unpaid") h += `<button class="btn block" data-act="payAll">Tout marquer « payé »</button><div style="height:8px"></div>`;
-  }
-  h += `<div class="row" style="margin-top:8px"><button class="btn" data-act="newEntry">+ Entrée manuelle</button><button class="btn primary" data-act="exportCsv">Exporter (Calc)</button></div>`;
+  if (!selMode) h += `<div class="row" style="margin-top:12px"><button class="btn" data-act="newEntry">+ Entrée manuelle</button><button class="btn primary" data-act="exportCsv">Exporter (Calc)</button></div>`;
   $("#view").innerHTML = h;
+  renderSelBar();
 }
+
+/* ---- Sélection multiple (appui long) ---- */
+function renderSelBar(){
+  let bar = $("#selbar");
+  document.body.classList.toggle("selecting", selMode && current === "history");
+  if (!selMode || current !== "history") { if (bar) bar.remove(); return; }
+  if (!bar) { bar = document.createElement("div"); bar.id = "selbar"; bar.className = "selbar"; document.body.appendChild(bar); }
+  const l = S.entries.filter(e => selIds.has(e.id));
+  const hrs = l.reduce((x,e) => x + hoursOf(e), 0), amt = l.reduce((x,e) => x + totalOf(e), 0);
+  bar.innerHTML = `<div class="top"><span>${l.length} sélectionnée${l.length > 1 ? "s" : ""} · ${dur(hrs*3600000)} · ${money(amt)}</span>
+      <span style="display:flex;gap:6px;flex:0 0 auto"><button class="btn" style="min-height:36px;padding:0 12px" data-act="selAll">Tout</button><button class="btn" style="min-height:36px;padding:0 12px" data-act="selExit" aria-label="Quitter la sélection">✕</button></span></div>
+    <div class="grid">
+      <button class="btn" data-act="selSet" data-id="billed" ${l.length ? "" : "disabled"}>Facturé</button>
+      <button class="btn" data-act="selSet" data-id="unbilled" ${l.length ? "" : "disabled"}>Non facturé</button>
+      <button class="btn primary" data-act="selSet" data-id="paid" ${l.length ? "" : "disabled"}>Payé</button>
+      <button class="btn" data-act="selSet" data-id="unpaid" ${l.length ? "" : "disabled"}>Non payé</button>
+    </div>`;
+}
+function enterSelection(id){
+  selMode = true; selIds = new Set(id ? [id] : []);
+  if (navigator.vibrate) navigator.vibrate(30);
+  guardOn(); renderHistory();
+}
+function exitSelection(){ selMode = false; selIds.clear(); renderSelBar(); guardOff(); if (current === "history") renderHistory(); }
+function toggleSel(id){ selIds.has(id) ? selIds.delete(id) : selIds.add(id); renderHistory(); }
+function applySel(kind){
+  const l = S.entries.filter(e => selIds.has(e.id));
+  if (!l.length) return;
+  l.forEach(e => {
+    if (kind === "billed") e.billed = true;
+    if (kind === "unbilled") { e.billed = false; e.paid = false; }
+    if (kind === "paid") { e.paid = true; e.billed = true; }
+    if (kind === "unpaid") e.paid = false;
+  });
+  save();
+  const label = { billed: "facturées", unbilled: "non facturées", paid: "payées", unpaid: "non payées" }[kind];
+  toast(l.length + " entrée" + (l.length > 1 ? "s" : "") + " marquée" + (l.length > 1 ? "s" : "") + " " + label + " ✓");
+  exitSelection();
+}
+/* Appui long : 500 ms sans bouger */
+(function(){
+  let timer = null, startX = 0, startY = 0, fired = false;
+  const view = document.getElementById("view");
+  view.addEventListener("pointerdown", ev => {
+    const row = ev.target.closest(".entry[data-entry]");
+    if (!row || current !== "history") return;
+    fired = false; startX = ev.clientX; startY = ev.clientY;
+    clearTimeout(timer);
+    timer = setTimeout(() => { fired = true; const id = row.dataset.entry; selMode ? toggleSel(id) : enterSelection(id); }, 500);
+  });
+  const cancel = () => clearTimeout(timer);
+  view.addEventListener("pointermove", ev => { if (Math.abs(ev.clientX - startX) > 10 || Math.abs(ev.clientY - startY) > 10) cancel(); });
+  view.addEventListener("pointerup", cancel);
+  view.addEventListener("pointercancel", cancel);
+  view.addEventListener("contextmenu", ev => { if (ev.target.closest(".entry")) ev.preventDefault(); });
+  // Le clic qui suit un appui long ne doit pas ouvrir l'entrée
+  view.addEventListener("click", ev => { if (fired) { fired = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
+})();
 
 /* ---- Clients ---- */
 function renderClients(){
   $("#title").textContent = "Clients"; $("#hdr").textContent = "";
   let h = S.clients.length ? `<div class="clients">` + [...S.clients].sort((a,b) => a.name.localeCompare(b.name,"fr")).map(c =>
     `<button class="client" data-act="editClient" data-id="${c.id}"><span class="grow"><span class="name">${esc(c.name)}</span>${c.isDefault ? `<span class="badge def">Par défaut</span>` : ""}
-     <span class="meta" style="display:block">${money(c.rate)}/h · ${c.lat != null ? "📍 " + esc(c.address || "position enregistrée") : "<i>pas d'adresse localisée</i>"}</span></span><span class="muted">›</span></button>`).join("") + `</div>`
+     <span class="meta" style="display:block">${money(c.rate)}/h · ${c.lat != null ? "📍 " + esc(c.address || "position enregistrée") : "<i>pas d'adresse localisée</i>"}</span>
+     ${(u => u.n ? `<span class="meta" style="display:block;color:var(--warn);font-weight:600">Non facturé : ${dur(u.hrs*3600000)} · ${money(u.amt)}</span>` : "")(unbilledFor(c.id))}</span><span class="muted">›</span></button>`).join("") + `</div>`
     : `<div class="card empty">Aucun client pour l'instant.</div>`;
   h += `<div style="height:12px"></div><button class="btn primary block" data-act="newClient">+ Ajouter un client</button>`;
   $("#view").innerHTML = h;
@@ -798,9 +893,34 @@ function renderSettings(){
 }
 
 /* ============ Fiches (sheets) ============ */
+/* Bouton « retour » d'Android : ferme la fiche ouverte (comme Annuler) ou quitte la sélection.
+   Une entrée d'historique sert de garde tant qu'une fiche ou une sélection est ouverte. */
+let guard = false, ignorePop = false, pendingPush = false;
+function guardOn(){
+  if (guard) return;
+  if (ignorePop) { pendingPush = true; return; }
+  try { history.pushState({ punch: 1 }, ""); guard = true; } catch(e) {}
+}
+function guardOff(){
+  if (!guard || sheetOpen() || selMode) return;
+  guard = false; ignorePop = true;
+  try { history.back(); } catch(e) { ignorePop = false; }
+}
+window.addEventListener("popstate", () => {
+  if (ignorePop) {
+    ignorePop = false;
+    if (pendingPush || sheetOpen() || selMode) { pendingPush = false; guard = false; guardOn(); }
+    return;
+  }
+  guard = false;
+  if (sheetOpen()) { hideSheet(); render(); }
+  else if (selMode) exitSelection();
+  if (sheetOpen() || selMode) guardOn();
+});
 let sheetKind = null;
-function openSheet(html, kind){ sheetKind = kind || null; const s = $("#sheet"); s.innerHTML = `<div class="sheet-bg" data-act="closeBg"><div class="sheet">${html}</div></div>`; s.classList.remove("hidden"); }
-function closeSheet(){ sheetKind = null; $("#sheet").classList.add("hidden"); $("#sheet").innerHTML = ""; render(); }
+function openSheet(html, kind){ sheetKind = kind || null; const s = $("#sheet"); s.innerHTML = `<div class="sheet-bg" data-act="closeBg"><div class="sheet">${html}</div></div>`; s.classList.remove("hidden"); guardOn(); }
+function hideSheet(){ sheetKind = null; $("#sheet").classList.add("hidden"); $("#sheet").innerHTML = ""; }
+function closeSheet(){ hideSheet(); guardOff(); render(); }
 
 function openClient(id){
   const c = id ? clientById(id) : { name: "", rate: "", address: "", lat: null, lng: null, isDefault: !S.clients.length };
@@ -833,7 +953,8 @@ function openEntry(id, justPunched){
   if (!e) return;
   const opts = S.clients.map(c => `<option value="${c.id}" ${c.id === e.clientId ? "selected" : ""}>${esc(c.name)}</option>`).join("")
     + (e.clientId && !clientById(e.clientId) ? `<option value="${esc(e.clientId)}" selected>${esc(e.clientName)} (supprimé)</option>` : "");
-  openSheet(`<h3>${justPunched ? "Punch OUT ✓" : isNew ? "Entrée manuelle" : "Modifier l'entrée"}</h3>
+  openSheet(`<div class="sheet-head"><h3>${justPunched ? "Punch OUT ✓" : isNew ? "Entrée manuelle" : "Modifier l'entrée"}</h3>
+    ${isNew ? "" : `<button class="icon-btn" data-act="delEntry" data-id="${e.id}" aria-label="Supprimer"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>`}</div>
     ${justPunched ? `<div class="muted">${esc(e.clientName)} · ${dur(e.end - e.start)} · ${money(totalOf(e))}</div>` : ""}
     ${timeFields(e.start, e.end)}
     <label class="f">Client</label><select id="eClient">${opts}</select>
@@ -844,7 +965,7 @@ function openEntry(id, justPunched){
     </div>
     <div class="switch"><span>Facturé</span><input type="checkbox" id="eBilled" ${e.billed ? "checked" : ""}></div>
     <div class="switch"><span>Payé</span><input type="checkbox" id="ePaid" ${e.paid ? "checked" : ""}></div>
-    <div class="actions">${isNew ? `<button class="btn" data-act="close">Annuler</button>` : `<button class="btn danger" data-act="delEntry" data-id="${e.id}">Supprimer</button>`}<button class="btn primary" data-act="saveEntry" data-id="${isNew ? "" : e.id}">Enregistrer</button></div>`);
+    <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="saveEntry" data-id="${isNew ? "" : e.id}">Enregistrer</button></div>`, "entry");
   const sel = $("#eClient");
   if (sel) sel.addEventListener("change", () => { const c = clientById(sel.value); if (c) $("#eRate").value = c.rate; });
   bindTimeFields();
@@ -913,7 +1034,7 @@ async function switchClient(newId){
   const travelForNew = (document.querySelector('input[name="travelFor"]:checked') || {}).value === "new";
   const split = travelForNew && a.leftPending ? a.leftPending.at : Date.now();
   const oldName = a.clientName;
-  $("#sheet").classList.add("hidden"); sheetKind = null;
+  hideSheet(); guardOff();
   punchOut(split, {switched: true});
   await punchIn(newId, {start: split});
   toast(oldName + " terminé à " + hm(split) + " · Punch IN chez " + (clientById(newId) || {}).name + " ✓", 5000);
@@ -1053,6 +1174,10 @@ const ACT = {
   filter: id => { histFilter = id; renderHistory(); },
   toggleBilled: id => { const e = S.entries.find(x => x.id === id); e.billed = !e.billed; if (!e.billed) e.paid = false; save(); renderHistory(); },
   togglePaid: id => { const e = S.entries.find(x => x.id === id); e.paid = !e.paid; if (e.paid) e.billed = true; save(); renderHistory(); },
+  selAll: () => { filteredEntries().forEach(e => selIds.add(e.id)); renderHistory(); },
+  selExit: () => exitSelection(),
+  selSet: id => applySel(id),
+  showUnbilled: id => { histClient = id; histFilter = "tobill"; histPeriod = "all"; go("history"); },
   billAll: () => { const l = filteredEntries(); if (confirm(`Marquer ${l.length} entrée(s) comme facturées ?`)) { l.forEach(e => e.billed = true); save(); renderHistory(); } },
   payAll: () => { const l = filteredEntries(); if (confirm(`Marquer ${l.length} entrée(s) comme payées ?`)) { l.forEach(e => { e.paid = true; e.billed = true; }); save(); renderHistory(); } },
   exportCsv: () => exportCsv(),
@@ -1096,11 +1221,11 @@ const ACT = {
     closeSheet(); toast("Punch IN modifié : " + hm(t) + " ✓");
   },
   delEntry: id => { if (confirm("Supprimer cette entrée ?")) { S.entries = S.entries.filter(x => x.id !== id); save(); closeSheet(); } },
-  leftAt: id => { $("#sheet").classList.add("hidden"); sheetKind = null; punchOut(Number(id)); },
+  leftAt: id => { hideSheet(); guardOff(); punchOut(Number(id)); },
   askLeft: () => askLeftZone(),
   travel: id => startTravel(Number(id)),
   switchTo: id => switchClient(id),
-  leftCustom: () => { const t = fromLocalInput(val("leftCustom")); if (!t) return; $("#sheet").classList.add("hidden"); sheetKind = null; punchOut(t); },
+  leftCustom: () => { const t = fromLocalInput(val("leftCustom")); if (!t) return; hideSheet(); guardOff(); punchOut(t); },
   homeGeocode: async () => { const g = await geocode(val("homeAddr")); if (g) { S.settings.home = { lat: g.lat, lng: g.lng, label: val("homeAddr").trim() || g.label }; save(); renderSettings(); toast("Domicile enregistré ✓"); } },
   homeHere: async () => { toast("Recherche de la position…"); const p = await currentPosition(10000); if (p) { S.settings.home = { lat: p.lat, lng: p.lng, label: val("homeAddr").trim() || "Position enregistrée" }; save(); renderSettings(); toast("Domicile enregistré ✓"); } else toast("Position introuvable"); },
   saveSettings: async () => {
@@ -1128,9 +1253,16 @@ const ACT = {
   },
   testNotif: () => notify(2999, "Test Punch", "Les notifications fonctionnent ✓")
 };
+document.addEventListener("change", ev => {
+  if (ev.target.id === "histClient") { histClient = ev.target.value; renderHistory(); }
+});
 document.addEventListener("click", ev => {
   const nb = ev.target.closest("nav button");
-  if (nb) return go(nb.dataset.tab);
+  if (nb) { if (selMode) exitSelection(); return go(nb.dataset.tab); }
+  if (selMode && current === "history") {
+    const row = ev.target.closest(".entry[data-entry]");
+    if (row) { toggleSel(row.dataset.entry); return; }
+  }
   const el = ev.target.closest("[data-act]");
   if (!el) return;
   const fn = ACT[el.dataset.act];
