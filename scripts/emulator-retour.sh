@@ -24,4 +24,9 @@ adb exec-out screencap -p > out/3-selection.png
 adb shell input keyevent KEYCODE_BACK; sleep 2
 timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({sel: selMode, tab: current})" > out/selection-apres.txt
 adb shell dumpsys activity activities | grep -E "(mResumedActivity|topResumedActivity)" >> out/premier-plan.txt
+# Retour depuis Historique → onglet Punch ; retour depuis Punch → l'app se ferme
+adb shell input keyevent KEYCODE_BACK; sleep 2
+timeout 60 python3 scripts/cdp_eval.py "JSON.stringify({tab: current})" > out/onglet-apres.txt
+adb shell input keyevent KEYCODE_BACK; sleep 2
+adb shell dumpsys activity activities | grep -E "(mResumedActivity|topResumedActivity)" > out/fin.txt
 exit 0

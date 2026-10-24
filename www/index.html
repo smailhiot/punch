@@ -897,12 +897,13 @@ function renderSettings(){
    Une entrée d'historique sert de garde tant qu'une fiche ou une sélection est ouverte. */
 let guard = false, ignorePop = false, pendingPush = false;
 function guardOn(){
-  if (guard) return;
+  if (NATIVE || guard) return;   // sur Android, le bouton retour passe par window.punchBack
+
   if (ignorePop) { pendingPush = true; return; }
   try { history.pushState({ punch: 1 }, ""); guard = true; } catch(e) {}
 }
 function guardOff(){
-  if (!guard || sheetOpen() || selMode) return;
+  if (NATIVE || !guard || sheetOpen() || selMode) return;
   guard = false; ignorePop = true;
   try { history.back(); } catch(e) { ignorePop = false; }
 }
@@ -917,6 +918,13 @@ window.addEventListener("popstate", () => {
   else if (selMode) exitSelection();
   if (sheetOpen() || selMode) guardOn();
 });
+/* Appelé par Android quand on touche « retour » ; true = géré ici */
+window.punchBack = () => {
+  if (sheetOpen()) { hideSheet(); render(); return true; }
+  if (selMode) { exitSelection(); return true; }
+  if (current !== "punch") { go("punch"); return true; }
+  return false;
+};
 let sheetKind = null;
 function openSheet(html, kind){ sheetKind = kind || null; const s = $("#sheet"); s.innerHTML = `<div class="sheet-bg" data-act="closeBg"><div class="sheet">${html}</div></div>`; s.classList.remove("hidden"); guardOn(); }
 function hideSheet(){ sheetKind = null; $("#sheet").classList.add("hidden"); $("#sheet").innerHTML = ""; }
