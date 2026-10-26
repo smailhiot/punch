@@ -195,6 +195,8 @@ const hm = t => { const d = new Date(t); return pad(d.getHours()) + ":" + pad(d.
 const ymd = t => { const d = new Date(t); return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); };
 const dayLabel = t => new Date(t).toLocaleDateString("fr-CA",{weekday:"long",day:"numeric",month:"long"});
 const dur = ms => { const m = Math.max(0, Math.round(ms/60000)); return Math.floor(m/60) + " h " + pad(m%60); };
+/* Heures en décimal, arrondies à la minute comme l'affichage h/min : 25 h 45 → 25.75 h */
+const dec = hrs => (Math.round(hrs * 60) / 60).toFixed(2) + " h";
 const hoursOf = e => Math.max(0, ((e.end || Date.now()) - e.start) / 3600000);
 const totalOf = e => hoursOf(e) * (Number(e.rate) || 0) + (Number(e.material) || 0);
 const toLocalInput = t => { const d = new Date(t); return ymd(t) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()); };
@@ -260,7 +262,7 @@ function bindTimeFields(){
     if (!info) return;
     const a = fromDateTime(val("eStartD"), val("eStartT")), b = fromDateTime(val("eEndD"), val("eEndT"));
     if (!a || !b) { info.textContent = ""; return; }
-    info.innerHTML = b > a ? "Durée : <b>" + dur(b - a) + "</b>" : "<span style=\"color:var(--out)\">Le OUT doit être après le IN</span>";
+    info.innerHTML = b > a ? "Durée : <b>" + dur(b - a) + "</b> (" + dec((b - a) / 3600000) + ")" : "<span style=\"color:var(--out)\">Le OUT doit être après le IN</span>";
   };
   // Changer la date du IN déplace aussi la date du OUT du même nombre de jours
   const startDateChanged = () => {
@@ -707,10 +709,10 @@ function renderPunch(soft){
   if (ubId) {
     const ub = unbilledFor(ubId);
     h += `<h2>Non facturé · ${esc(ubName)}</h2><button class="card unbilled" data-act="showUnbilled" data-id="${esc(ubId)}">
-      <span class="grow"><b style="font-size:20px">${dur(ub.hrs*3600000)}</b> <span class="muted">· ${money(ub.amt)}</span><br>
+      <span class="grow"><b style="font-size:20px">${dur(ub.hrs*3600000)}</b> <span class="muted">(${dec(ub.hrs)}) · ${money(ub.amt)}</span><br>
       <span class="small muted">${ub.n} entrée${ub.n > 1 ? "s" : ""} non facturée${ub.n > 1 ? "s" : ""}${a ? " (sans le quart en cours)" : ""}</span></span><span class="muted">›</span></button>`;
   }
-  h += `<h2>Aujourd'hui</h2><div class="card today"><div><b>${dur(hrs*3600000)}</b><span class="small muted">heures</span></div><div><b>${money(amt)}</b><span class="small muted">montant</span></div><div><b>${todays.length + (a ? 1 : 0)}</b><span class="small muted">punch</span></div></div>`;
+  h += `<h2>Aujourd'hui</h2><div class="card today"><div><b>${dur(hrs*3600000)}</b><span class="small muted">${dec(hrs)}</span></div><div><b>${money(amt)}</b><span class="small muted">montant</span></div><div><b>${todays.length + (a ? 1 : 0)}</b><span class="small muted">punch</span></div></div>`;
   $("#view").innerHTML = h;
 }
 
@@ -746,14 +748,14 @@ function renderHistory(){
     <div class="chips">${[["all","Toutes"],["tobill","À facturer"],["unpaid","Facturé, non payé"],["paid","Payé"]].map(([k,l]) => `<button class="chip ${histFilter === k ? "on" : ""}" data-act="filter" data-id="${k}">${l}</button>`).join("")}</div>`;
   if (list.length) {
     const tot = list.reduce((x,e) => x + totalOf(e), 0), hrs = list.reduce((x,e) => x + hoursOf(e), 0);
-    h += `<div class="card summary"><div><b>${dur(hrs*3600000)}</b><span class="small muted">heures</span></div><div><b>${money(tot)}</b><span class="small muted">montant</span></div><div><b>${list.length}</b><span class="small muted">entrées</span></div></div>`;
+    h += `<div class="card summary"><div><b>${dur(hrs*3600000)}</b><span class="small muted">${dec(hrs)}</span></div><div><b>${money(tot)}</b><span class="small muted">montant</span></div><div><b>${list.length}</b><span class="small muted">entrées</span></div></div>`;
     if (!selMode) h += `<div class="small muted" style="margin:-4px 4px 4px">Appui long sur une entrée pour en sélectionner plusieurs.</div>`;
   } else h += `<div class="card empty">Aucune entrée pour cette sélection.</div>`;
   let lastDay = null, group = [];
   const flush = () => {
     if (!group.length) return;
     const tot = group.reduce((x,e) => x + totalOf(e), 0), hrs = group.reduce((x,e) => x + hoursOf(e), 0);
-    h += `<div class="day"><span>${esc(dayLabel(group[0].start))}</span><span>${dur(hrs*3600000)} · ${money(tot)}</span></div><div class="card list">` +
+    h += `<div class="day"><span>${esc(dayLabel(group[0].start))}</span><span>${dur(hrs*3600000)} (${dec(hrs)}) · ${money(tot)}</span></div><div class="card list">` +
       group.map(e => `<div class="entry ${selIds.has(e.id) ? "sel" : ""}" data-entry="${e.id}">
         ${selMode ? `<span class="check">${selIds.has(e.id) ? "✓" : ""}</span>` : ""}
         <button class="grow" style="text-align:left" data-act="openEntry" data-id="${e.id}">
@@ -779,7 +781,7 @@ function renderSelBar(){
   if (!bar) { bar = document.createElement("div"); bar.id = "selbar"; bar.className = "selbar"; document.body.appendChild(bar); }
   const l = S.entries.filter(e => selIds.has(e.id));
   const hrs = l.reduce((x,e) => x + hoursOf(e), 0), amt = l.reduce((x,e) => x + totalOf(e), 0);
-  bar.innerHTML = `<div class="top"><span>${l.length} sélectionnée${l.length > 1 ? "s" : ""} · ${dur(hrs*3600000)} · ${money(amt)}</span>
+  bar.innerHTML = `<div class="top"><span>${l.length} sélectionnée${l.length > 1 ? "s" : ""} · ${dur(hrs*3600000)} (${dec(hrs)}) · ${money(amt)}</span>
       <span style="display:flex;gap:6px;flex:0 0 auto"><button class="btn" style="min-height:36px;padding:0 12px" data-act="selAll">Tout</button><button class="btn" style="min-height:36px;padding:0 12px" data-act="selExit" aria-label="Quitter la sélection">✕</button></span></div>
     <div class="grid">
       <button class="btn" data-act="selSet" data-id="billed" ${l.length ? "" : "disabled"}>Facturé</button>
@@ -835,7 +837,7 @@ function renderClients(){
   let h = S.clients.length ? `<div class="clients">` + [...S.clients].sort((a,b) => a.name.localeCompare(b.name,"fr")).map(c =>
     `<button class="client" data-act="editClient" data-id="${c.id}"><span class="grow"><span class="name">${esc(c.name)}</span>${c.isDefault ? `<span class="badge def">Par défaut</span>` : ""}
      <span class="meta" style="display:block">${money(c.rate)}/h · ${c.lat != null ? "📍 " + esc(c.address || "position enregistrée") : "<i>pas d'adresse localisée</i>"}</span>
-     ${(u => u.n ? `<span class="meta" style="display:block;color:var(--warn);font-weight:600">Non facturé : ${dur(u.hrs*3600000)} · ${money(u.amt)}</span>` : "")(unbilledFor(c.id))}</span><span class="muted">›</span></button>`).join("") + `</div>`
+     ${(u => u.n ? `<span class="meta" style="display:block;color:var(--warn);font-weight:600">Non facturé : ${dur(u.hrs*3600000)} (${dec(u.hrs)}) · ${money(u.amt)}</span>` : "")(unbilledFor(c.id))}</span><span class="muted">›</span></button>`).join("") + `</div>`
     : `<div class="card empty">Aucun client pour l'instant.</div>`;
   h += `<div style="height:12px"></div><button class="btn primary block" data-act="newClient">+ Ajouter un client</button>`;
   $("#view").innerHTML = h;
