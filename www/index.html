@@ -120,6 +120,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
 .selbar .btn{min-height:44px}
 body.selecting{padding-bottom:calc(200px + env(safe-area-inset-bottom))}
 .summary{display:flex;justify-content:space-around;text-align:center}
+.bill{padding:6px 16px}
+.bill-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.bill-row b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.bill-row.total{border-bottom:0;font-size:18px}
+.bill-row.total b{color:var(--brand)}
 .summary b{display:block;font-size:18px}
 .unbilled{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
 .unbilled .grow{flex:1}
@@ -736,6 +741,22 @@ function unbilledFor(clientId){
   const l = S.entries.filter(e => e.clientId === clientId && !e.billed);
   return { n: l.length, hrs: l.reduce((x,e) => x + hoursOf(e), 0), amt: l.reduce((x,e) => x + totalOf(e), 0) };
 }
+/* Résumé prêt à facturer : heures × taux, matériel séparé, total */
+function billSummary(list){
+  const hrs = list.reduce((x,e) => x + hoursOf(e), 0);
+  const labor = list.reduce((x,e) => x + hoursOf(e) * (Number(e.rate) || 0), 0);
+  const mat = list.reduce((x,e) => x + (Number(e.material) || 0), 0);
+  const rates = [...new Set(list.map(e => Number(e.rate) || 0))].sort((a,b) => a - b);
+  const line = (label, value, sub, strong) => `<div class="bill-row${strong ? " total" : ""}"><span>${label}${sub ? `<br><span class="small muted">${sub}</span>` : ""}</span><b>${value}</b></div>`;
+  const rateTxt = rates.length === 1 ? dec(hrs) + " × " + money(rates[0]) + "/h"
+    : rates.map(r => { const h = list.filter(e => (Number(e.rate) || 0) === r).reduce((x,e) => x + hoursOf(e), 0); return dec(h) + " × " + money(r); }).join(" + ");
+  return `<div class="card bill">
+    ${line("Heures", dur(hrs*3600000), dec(hrs) + " · " + list.length + " entrée" + (list.length > 1 ? "s" : ""))}
+    ${line("Main-d'œuvre", money(labor), rateTxt)}
+    ${line("Matériel", money(mat))}
+    ${line("Total", money(labor + mat), "", true)}
+  </div>`;
+}
 function renderHistory(){
   $("#title").textContent = "Historique"; $("#hdr").textContent = "";
   const list = filteredEntries();
@@ -748,7 +769,7 @@ function renderHistory(){
     <div class="chips">${[["all","Toutes"],["tobill","À facturer"],["unpaid","Facturé, non payé"],["paid","Payé"]].map(([k,l]) => `<button class="chip ${histFilter === k ? "on" : ""}" data-act="filter" data-id="${k}">${l}</button>`).join("")}</div>`;
   if (list.length) {
     const tot = list.reduce((x,e) => x + totalOf(e), 0), hrs = list.reduce((x,e) => x + hoursOf(e), 0);
-    h += `<div class="card summary"><div><b>${dur(hrs*3600000)}</b><span class="small muted">${dec(hrs)}</span></div><div><b>${money(tot)}</b><span class="small muted">montant</span></div><div><b>${list.length}</b><span class="small muted">entrées</span></div></div>`;
+    h += billSummary(list);
     if (!selMode) h += `<div class="small muted" style="margin:-4px 4px 4px">Appui long sur une entrée pour en sélectionner plusieurs.</div>`;
   } else h += `<div class="card empty">Aucune entrée pour cette sélection.</div>`;
   let lastDay = null, group = [];
