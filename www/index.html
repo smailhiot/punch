@@ -755,6 +755,7 @@ function billSummary(list){
     ${line("Main-d'œuvre", money(labor), rateTxt)}
     ${line("Matériel", money(mat))}
     ${line("Total", money(labor + mat), "", true)}
+    ${(n => n ? `<button class="btn primary block" style="margin:6px 0 10px" data-act="billAll">Marquer ${n} entrée${n > 1 ? "s" : ""} « Facturé »</button>` : `<div class="small muted" style="padding:0 0 10px">✓ Tout est facturé dans ce rapport</div>`)(list.filter(e => !e.billed).length)}
   </div>`;
 }
 function renderHistory(){
@@ -1209,7 +1210,17 @@ const ACT = {
   selExit: () => exitSelection(),
   selSet: id => applySel(id),
   showUnbilled: id => { histClient = id; histFilter = "tobill"; histPeriod = "all"; go("history"); },
-  billAll: () => { const l = filteredEntries(); if (confirm(`Marquer ${l.length} entrée(s) comme facturées ?`)) { l.forEach(e => e.billed = true); save(); renderHistory(); } },
+  billAll: () => {
+    // Seulement les entrées du rapport affiché (client + période + état choisis)
+    const l = filteredEntries().filter(e => !e.billed);
+    if (!l.length) return;
+    const who = histClient === "all" ? "Tous les clients" : ((clientById(histClient) || {}).name || (l[0] && l[0].clientName) || "");
+    const per = { week: "Cette semaine", month: "Ce mois", last: "Mois dernier", all: "Toute la période" }[histPeriod];
+    const hrs = l.reduce((x,e) => x + hoursOf(e), 0), tot = l.reduce((x,e) => x + totalOf(e), 0);
+    if (!confirm(`Marquer ${l.length} entrée${l.length > 1 ? "s" : ""} comme facturée${l.length > 1 ? "s" : ""} ?\n\n${who} · ${per}\n${dec(hrs)} · ${money(tot)}`)) return;
+    l.forEach(e => e.billed = true); save(); renderHistory();
+    toast(l.length + " entrée" + (l.length > 1 ? "s" : "") + " marquée" + (l.length > 1 ? "s" : "") + " facturée" + (l.length > 1 ? "s" : "") + " ✓");
+  },
   payAll: () => { const l = filteredEntries(); if (confirm(`Marquer ${l.length} entrée(s) comme payées ?`)) { l.forEach(e => { e.paid = true; e.billed = true; }); save(); renderHistory(); } },
   exportCsv: () => exportCsv(),
   backup: () => backup(),
