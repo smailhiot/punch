@@ -121,6 +121,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
 body.selecting{padding-bottom:calc(200px + env(safe-area-inset-bottom))}
 .summary{display:flex;justify-content:space-around;text-align:center}
 .bill{padding:6px 16px}
+.mats{margin:14px 0 4px;text-align:left;border-top:1px solid var(--line);padding-top:12px}
+.mats .mrow{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:15px}
+.mats .mrow .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mats .mrow b{font-variant-numeric:tabular-nums}
+.mats .x{width:36px;height:36px;border-radius:10px;color:var(--muted);font-size:18px;flex:0 0 auto}
+.mats .mtot{display:flex;justify-content:space-between;font-weight:700;padding:8px 0 10px;border-top:1px solid var(--line);margin-top:4px}
 .bill-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
 .bill-row b{white-space:nowrap;font-variant-numeric:tabular-nums}
 .bill-row.total{border-bottom:0;font-size:18px}
@@ -202,6 +208,7 @@ const dayLabel = t => new Date(t).toLocaleDateString("fr-CA",{weekday:"long",day
 const dur = ms => { const m = Math.max(0, Math.round(ms/60000)); return Math.floor(m/60) + " h " + pad(m%60); };
 /* Heures en décimal, arrondies à la minute comme l'affichage h/min : 25 h 45 → 25.75 h */
 const dec = hrs => (Math.round(hrs * 60) / 60).toFixed(2) + " h";
+const matsTotal = a => (a && a.materials || []).reduce((x,m) => x + (Number(m.amount) || 0), 0);
 const hoursOf = e => Math.max(0, ((e.end || Date.now()) - e.start) / 3600000);
 const totalOf = e => hoursOf(e) * (Number(e.rate) || 0) + (Number(e.material) || 0);
 const toLocalInput = t => { const d = new Date(t); return ymd(t) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()); };
@@ -530,7 +537,8 @@ function punchOut(end, opts = {}){
   if (!a) return;
   end = Math.max(a.start, end || Date.now());
   const e = { id: a.id, clientId: a.clientId, clientName: a.clientName, rate: a.rate, start: a.start, end,
-              desc: "", material: 0, billed: false, paid: false, auto: !!opts.auto, switched: !!opts.switched, review: true };
+              desc: "", material: Math.round(matsTotal(a) * 100) / 100, materials: (a.materials || []).slice(),
+              billed: false, paid: false, auto: !!opts.auto, switched: !!opts.switched, review: true };
   S.entries.push(e);
   S.active = null;
   save();
@@ -670,7 +678,7 @@ function renderPunch(soft){
   const today = ymd(Date.now());
   const todays = S.entries.filter(e => ymd(e.start) === today);
   let hrs = todays.reduce((s,e) => s + hoursOf(e), 0), amt = todays.reduce((s,e) => s + totalOf(e), 0);
-  if (a) { hrs += hoursOf(a); amt += hoursOf(a) * a.rate; }
+  if (a) { hrs += hoursOf(a); amt += hoursOf(a) * a.rate + matsTotal(a); }
   $("#hdr").textContent = new Date().toLocaleDateString("fr-CA",{weekday:"short",day:"numeric",month:"short"});
 
   let h = banners();
@@ -682,6 +690,11 @@ function renderPunch(soft){
       <div class="since">depuis <button data-act="editActiveStart" style="color:var(--brand);font-weight:700;text-decoration:underline;min-height:32px">${hm(a.start)}${ymd(a.start) !== ymd(Date.now()) ? " (" + new Date(a.start).toLocaleDateString("fr-CA",{day:"numeric",month:"short"}) + ")" : ""} ✎</button> · ${money(hoursOf(a) * a.rate)}</div>
       <button class="punch out" data-act="punchOut">OUT<small>Terminer</small></button>
       <div class="loc">${locLine()}</div>
+      <div class="mats">
+        ${(a.materials || []).map((m, i) => `<div class="mrow"><span class="muted small">${hm(m.at)}</span><span class="grow">${esc(m.note || "Matériel")}</span><b>${money(m.amount)}</b><button class="x" data-act="delMat" data-id="${i}" aria-label="Retirer">✕</button></div>`).join("")}
+        ${(a.materials || []).length ? `<div class="mtot"><span>Matériel (ce punch)</span><span>${money(matsTotal(a))}</span></div>` : ""}
+        <button class="btn block" data-act="addMat">+ Ajouter du matériel</button>
+      </div>
     </div>`;
   } else {
     if (!S.clients.length) {
@@ -989,6 +1002,7 @@ function openEntry(id, justPunched){
     ${isNew ? "" : `<button class="icon-btn" data-act="delEntry" data-id="${e.id}" aria-label="Supprimer"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>`}</div>
     ${justPunched ? `<div class="muted">${esc(e.clientName)} · ${dur(e.end - e.start)} · ${money(totalOf(e))}</div>` : ""}
     ${timeFields(e.start, e.end)}
+    ${(e.materials || []).length ? `<div class="small muted" style="margin-top:10px">Matériel ajouté pendant le punch : ${e.materials.map(m => esc(m.note || "Matériel") + " " + money(m.amount)).join(" · ")}</div>` : ""}
     <label class="f">Client</label><select id="eClient">${opts}</select>
     <label class="f">Description des travaux</label><textarea id="eDesc" placeholder="Qu'avez-vous fait ?">${esc(e.desc)}</textarea>
     <div class="row">
@@ -1001,6 +1015,18 @@ function openEntry(id, justPunched){
   const sel = $("#eClient");
   if (sel) sel.addEventListener("change", () => { const c = clientById(sel.value); if (c) $("#eRate").value = c.rate; });
   bindTimeFields();
+}
+
+/* Matériel pendant le quart : une ligne à la fois, additionnée au punch en cours */
+function openAddMat(){
+  if (!S.active) return;
+  openSheet(`<h3>Ajouter du matériel</h3>
+    <div class="muted">${esc(S.active.clientName)} · punch en cours${matsTotal(S.active) ? " · déjà " + money(matsTotal(S.active)) : ""}</div>
+    <label class="f">Montant ($)</label><input id="mAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" style="font-size:22px;font-weight:700">
+    <label class="f">Description (optionnel)</label><input id="mNote" type="text" autocomplete="off" placeholder="ex. vis, bois, pièces">
+    <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="saveMat">Ajouter</button></div>`, "mat");
+  ["mAmt","mNote"].forEach(id => $("#" + id).addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); ACT.saveMat(); } }));
+  setTimeout(() => { const el = $("#mAmt"); if (el) el.focus(); }, 50);
 }
 
 /* Modifier l'heure du punch IN en cours */
@@ -1252,6 +1278,20 @@ const ACT = {
     save(); closeSheet(); toast("Enregistré ✓");
   },
   editActiveStart: () => openActiveStart(),
+  addMat: () => openAddMat(),
+  saveMat: () => {
+    const amt = Math.round(parseFloat(String(val("mAmt")).replace(/\s/g, "").replace(",", ".")) * 100) / 100;
+    if (!(amt > 0)) return toast("Entrez un montant");
+    if (!S.active) return closeSheet();
+    (S.active.materials = S.active.materials || []).push({ amount: amt, note: val("mNote").trim(), at: Date.now() });
+    save(); closeSheet();
+    toast(money(amt) + " ajouté · total matériel " + money(matsTotal(S.active)) + " ✓");
+  },
+  delMat: i => {
+    const a = S.active, m = a && a.materials && a.materials[Number(i)];
+    if (!m || !confirm("Retirer " + money(m.amount) + (m.note ? " (" + m.note + ")" : "") + " ?")) return;
+    a.materials.splice(Number(i), 1); save(); renderPunch();
+  },
   pickDate: id => pickDate(id),
   retryZone: () => { zoneError = ""; syncZone(); setTimeout(applyZoneState, 3000); toast("Nouvel essai…"); },
   restoreAuto: () => { const d = pendingAutoBackup; pendingAutoBackup = null; closeSheet(); if (d) applyBackup(d, false); },
